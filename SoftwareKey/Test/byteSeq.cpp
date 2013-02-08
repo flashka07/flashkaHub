@@ -248,6 +248,8 @@ const ByteSeq& ByteSeq::divideBy(
 
   if(c_szLhsSize < c_szRhsSize)
   {
+    if(apRemainder)
+      *apRemainder = *this;
     *this = 0;
     return *this;
   }
