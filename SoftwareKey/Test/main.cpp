@@ -3,7 +3,8 @@
 #include <string>
 
 #include "aes_test.h"
-#include "sha1_test.h";
+#include "sha1_test.h"
+#include "byteSeq_test.h"
 
 typedef void (*TestProc)();
 std::map<std::string, TestProc> g_testProcMap; 
@@ -12,6 +13,7 @@ void initList()
 {
   g_testProcMap["aes"] = aes::test_aes;
   g_testProcMap["sha1"] = sha1::test_sha1;
+  g_testProcMap["byte"] = byteseq::test_byteSeq;
 }
 
 void printList()
@@ -46,6 +48,11 @@ bool launchCommand(const std::string& astrCommand)
 
 void main()
 {
+  unsigned char a = 0x02;
+  unsigned char b = a << -1;
+  std::cout << (unsigned int)a << '\n'
+    << (unsigned int)b << '\n';
+
   initList();
 
   std::cout << "Type one command from list\n";

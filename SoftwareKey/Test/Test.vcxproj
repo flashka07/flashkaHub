@@ -62,6 +62,8 @@
   <ItemGroup>
     <ClCompile Include="aes.cpp" />
     <ClCompile Include="aes_test.cpp" />
+    <ClCompile Include="byteSeq.cpp" />
+    <ClCompile Include="byteSeq_test.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="sha1.cpp" />
     <ClCompile Include="sha1_test.cpp" />
@@ -70,6 +72,8 @@
   <ItemGroup>
     <ClInclude Include="aes.h" />
     <ClInclude Include="aes_test.h" />
+    <ClInclude Include="byteSeq.h" />
+    <ClInclude Include="byteSeq_test.h" />
     <ClInclude Include="sha1.h" />
     <ClInclude Include="sha1_test.h" />
     <ClInclude Include="testUtils.h" />

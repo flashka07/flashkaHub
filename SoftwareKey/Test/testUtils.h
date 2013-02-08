@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+
 typedef unsigned char BYTE;
 typedef unsigned int DWORD;
 typedef unsigned __int64 QWORD;
@@ -18,4 +19,9 @@ namespace testUtils
       std::cout << " " << std::hex << (DWORD)(arr[i]);
     }
   }
+
+  int int2hexString(
+    DWORD adwNumber,
+    char* aOutString,
+    size_t aszMaxLength);
 }
