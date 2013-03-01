@@ -65,6 +65,7 @@
     <ClCompile Include="byteSeq.cpp" />
     <ClCompile Include="byteSeq_test.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="rsa.cpp" />
     <ClCompile Include="sha1.cpp" />
     <ClCompile Include="sha1_test.cpp" />
     <ClCompile Include="testUtils.cpp" />
@@ -74,6 +75,7 @@
     <ClInclude Include="aes_test.h" />
     <ClInclude Include="byteSeq.h" />
     <ClInclude Include="byteSeq_test.h" />
+    <ClInclude Include="rsa.h" />
     <ClInclude Include="sha1.h" />
     <ClInclude Include="sha1_test.h" />
     <ClInclude Include="testUtils.h" />

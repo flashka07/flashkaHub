@@ -332,6 +332,46 @@ const ByteSeq& ByteSeq::divideBy(
   return *this;
 }
 
+const ByteSeq& ByteSeq::pow(const ByteSeq& anExp)
+{
+  if(anExp == 0)
+  {
+    swap(ByteSeq(BYTE(1)));
+    return *this;
+  }
+
+  // step A1
+  ByteSeq exp(anExp);
+  ByteSeq result(1);
+  ByteSeq temp(*this);
+
+  ByteSeq remainder;
+  for(; ;)
+  {
+    // step A2
+    exp.divideBy(2, &remainder);
+    if(remainder == 0)
+    {
+      // step A5
+      temp *= temp;
+      continue;
+    }
+
+    // step A3
+    result *= temp;
+
+    // step A4
+    if(exp == 0)
+      break;
+
+    // step A5
+    temp *= temp;
+  }
+
+  swap(result);
+  return *this;
+}
+
 ByteSeq& ByteSeq::operator=(const ByteSeq& aRhs)
 {
   ByteSeq temp(aRhs);
@@ -632,4 +672,10 @@ int ByteSeq::compare(const ByteSeq& aRhs) const
   }
 
   return 0;
+}
+
+ByteSeq pow(const ByteSeq& aValue, const ByteSeq& aExp)
+{
+  ByteSeq result(aValue);
+  return result.pow(aExp);
 }

@@ -7,4 +7,5 @@ namespace byteseq
   bool mul_test();
   bool shift_test();
   bool bitwise_test();
+  bool pow_test();
 }

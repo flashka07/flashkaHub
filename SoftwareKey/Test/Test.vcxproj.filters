@@ -39,6 +39,9 @@
     <ClCompile Include="byteSeq_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="rsa.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aes.h">
@@ -60,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="byteSeq_test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rsa.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

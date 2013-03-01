@@ -54,6 +54,9 @@ public:
   // integer division
   const ByteSeq& divideBy(const ByteSeq& aDenominator, ByteSeq* apRemainder = NULL);
 
+  // power
+  const ByteSeq& pow(const ByteSeq& anExp);
+
   // arithmetic operators
   ByteSeq& operator=(const ByteSeq&);
   friend ByteSeq operator+(const ByteSeq& aLhs, const ByteSeq& aRhs);
@@ -123,3 +126,5 @@ private:
 
   std::vector<BYTE>* m_pData;
 };
+
+ByteSeq pow(const ByteSeq& aValue, const ByteSeq& aExp);

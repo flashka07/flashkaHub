@@ -32,6 +32,7 @@ namespace byteseq
     mul_test();
     shift_test();
     bitwise_test();
+    pow_test();
   }
 
   bool sum_test()
@@ -200,6 +201,33 @@ namespace byteseq
         << f << ". Must be " << (DWORD)bf << " :: "
         << ((f == bf) ? "TRUE" : "FALSE") << '\n';
     }
+    return true;
+  }
+
+  bool pow_test()
+  {
+    std::cout << "\npow_test:\n";
+
+    ByteSeq a(BYTE(0x05));
+    ByteSeq b(pow(a, 0));
+    std::cout << std::hex << a << " ^ " << 0 << " = " 
+        << b << ". Must be " << 1 << " :: "
+        << ((b == 1) ? "TRUE" : "FALSE") << '\n';
+
+    b = pow(a, 1);
+    std::cout << std::hex << a << " ^ " << 1 << " = " 
+        << b << ". Must be " << a << " :: "
+        << ((b == a) ? "TRUE" : "FALSE") << '\n';
+
+    b = pow(a, 2);
+    std::cout << std::hex << a << " ^ " << 2 << " = " 
+        << b << ". Must be " << DWORD(25) << " :: "
+        << ((b == 25) ? "TRUE" : "FALSE") << '\n';
+
+    b = pow(a, 5);
+    std::cout << std::hex << a << " ^ " << 5 << " = " 
+        << b << ". Must be " << DWORD(3125) << " :: "
+        << ((b == 3125) ? "TRUE" : "FALSE") << '\n';
     return true;
   }
 }
