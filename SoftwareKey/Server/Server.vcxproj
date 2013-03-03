@@ -63,10 +63,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Socket.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Socket.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\Debug\SChannel.lib" />

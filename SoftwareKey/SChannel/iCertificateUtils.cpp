@@ -9,6 +9,9 @@
 
 #include "iCertificateUtils.h"
 
+#include "tCryptProv.h"
+#include "tCertificate.h" // temporary
+
 #include "iLog.h"
 
 #pragma comment(lib, "crypt32.lib")
@@ -18,37 +21,17 @@
 int ICertificateUtils::createSelfSignedCert()
 {
   // acquire crypt context
-  std::wstring wstrKeyContainerName(L"Test Key Container Name");
-  HCRYPTPROV hCryptProv = NULL;
-  BOOL fResult = FALSE;
-  int nResult = NTE_EXISTS;
-  for(bool fFirstCall = true; 
-      nResult == NTE_EXISTS;
-      fFirstCall = false)
-  {
-    nResult = 0;
-    fResult = ::CryptAcquireContext(
-      &hCryptProv,
-      wstrKeyContainerName.c_str(),
-      MS_DEF_PROV, // may be another like MS_DEF_RSA_SCHANNEL_PROV
-      PROV_RSA_FULL,
-      (fFirstCall ? CRYPT_NEWKEYSET : 0) | CRYPT_MACHINE_KEYSET);
-    if(!fResult)
-    {
-      nResult = ::GetLastError();
-    }
-  }
-  if(nResult)
-  {
-    ILogR("Error in ::CryptAcquireContext", nResult);
-    return nResult;
-  }
+
+  TCryptProv cryptProv(L"Test Key Container Name");
+
+  int nResult = 0;
+  BOOL fResult = TRUE;
 
   // open MY Cert Store
   HANDLE hCertStore = ::CertOpenStore(
     CERT_STORE_PROV_SYSTEM,
     X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
-    hCryptProv, //NULL, // MSDN:  Passing NULL for this parameter causes 
+    cryptProv.getHCryptProv(), //NULL, // MSDN:  Passing NULL for this parameter causes 
                         // an appropriate, default provider to be used. 
                         // Using the default provider is recommended.
     CERT_SYSTEM_STORE_LOCAL_MACHINE
@@ -59,7 +42,6 @@ int ICertificateUtils::createSelfSignedCert()
   {
     nResult = ::GetLastError();
     ILogR("Error in ::CertOpenStore", nResult);
-    ::CryptReleaseContext(hCryptProv, 0);
     return nResult;
   }
   
@@ -79,7 +61,6 @@ int ICertificateUtils::createSelfSignedCert()
     {
       nResult = ::GetLastError();
       ILogR("Error in first ::CertStrToName", nResult);
-      ::CryptReleaseContext(hCryptProv, 0);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
@@ -97,7 +78,6 @@ int ICertificateUtils::createSelfSignedCert()
     {
       nResult = ::GetLastError();
       ILogR("Error in second ::CertStrToName", nResult);
-      ::CryptReleaseContext(hCryptProv, 0);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
@@ -121,7 +101,6 @@ int ICertificateUtils::createSelfSignedCert()
       ILogR(
         "Error in ::CertDeleteCertificateFromStore", 
         nResult);
-      ::CryptReleaseContext(hCryptProv, 0);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
@@ -132,7 +111,7 @@ int ICertificateUtils::createSelfSignedCert()
   DWORD dwKeyLength = 0x08000000;
   HCRYPTKEY hCryptKey = NULL;
   fResult = ::CryptGenKey(
-    hCryptProv,
+    cryptProv.getHCryptProv(),
     AT_KEYEXCHANGE,
     /*dwKeyLength | */CRYPT_EXPORTABLE,
     &hCryptKey);
@@ -140,7 +119,6 @@ int ICertificateUtils::createSelfSignedCert()
   {
     nResult = ::GetLastError();
     ILogR("Error in ::CryptGenKey", nResult);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -148,7 +126,7 @@ int ICertificateUtils::createSelfSignedCert()
   // creating the self-signed certificate
   // may be it is not right
   wchar_t wstrContName[500] = L"";
-  wcscpy(wstrContName, wstrKeyContainerName.c_str());
+  wcscpy(wstrContName, cryptProv.getContainerName().c_str());
   //::mbstowcs(
 
   CRYPT_KEY_PROV_INFO keyProvInfo = {0};
@@ -164,7 +142,7 @@ int ICertificateUtils::createSelfSignedCert()
 
   CERT_EXTENSIONS certExts = {0};
   PCCERT_CONTEXT pSelfSignContext = ::CertCreateSelfSignCertificate(
-    hCryptProv,
+    cryptProv.getHCryptProv(),
     &certNameBlob,
     0,
     &keyProvInfo,
@@ -177,7 +155,6 @@ int ICertificateUtils::createSelfSignedCert()
     nResult = ::GetLastError();
     ILogR("Error in ::CertCreateSelfSignCertificate", nResult);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -194,7 +171,6 @@ int ICertificateUtils::createSelfSignedCert()
     ILogR("Error in ::CertAddCertificateContextToStore", nResult);
     ::CertFreeCertificateContext(pSelfSignContext);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -219,7 +195,6 @@ int ICertificateUtils::createSelfSignedCert()
     ILogR("Error in ::CertSetCertificateContextProperty", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -234,14 +209,12 @@ int ICertificateUtils::createSelfSignedCert()
     ILogR("Error in toPFXFile", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
 
   ::CertFreeCertificateContext(pCertContext);
   ::CryptDestroyKey(hCryptKey);
-  ::CryptReleaseContext(hCryptProv, 0);
   fResult = ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
   if(!fResult)
   {
@@ -257,37 +230,16 @@ int ICertificateUtils::createSelfSignedCert()
 int ICertificateUtils::createSelfSignedCertMS()
 {
   // acquire crypt context
-  std::wstring wstrKeyContainerName(L"Test Key Container Name");
-  HCRYPTPROV hCryptProv = NULL;
-  BOOL fResult = FALSE;
-  int nResult = NTE_EXISTS;
-  for(bool fFirstCall = true; 
-      nResult == NTE_EXISTS;
-      fFirstCall = false)
-  {
-    nResult = 0;
-    fResult = ::CryptAcquireContext(
-      &hCryptProv,
-      wstrKeyContainerName.c_str(),
-      MS_DEF_PROV, // may be another like MS_DEF_RSA_SCHANNEL_PROV
-      PROV_RSA_FULL,
-      (fFirstCall ? CRYPT_NEWKEYSET : 0) | CRYPT_MACHINE_KEYSET);
-    if(!fResult)
-    {
-      nResult = ::GetLastError();
-    }
-  }
-  if(nResult)
-  {
-    ILogR("Error in ::CryptAcquireContext", nResult);
-    return nResult;
-  }
+  TCryptProv cryptProv(L"Test Key Container Name");
+  
+  int nResult = 0;
+  BOOL fResult = TRUE;
 
   // open MY Cert Store
   HANDLE hCertStore = ::CertOpenStore(
     CERT_STORE_PROV_MEMORY,
     X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
-    hCryptProv, //NULL, // MSDN:  Passing NULL for this parameter causes 
+    cryptProv.getHCryptProv(), //NULL, // MSDN:  Passing NULL for this parameter causes 
                         // an appropriate, default provider to be used. 
                         // Using the default provider is recommended.
     CERT_SYSTEM_STORE_LOCAL_MACHINE
@@ -298,7 +250,6 @@ int ICertificateUtils::createSelfSignedCertMS()
   {
     nResult = ::GetLastError();
     ILogR("Error in ::CertOpenStore", nResult);
-    ::CryptReleaseContext(hCryptProv, 0);
     return nResult;
   }
   
@@ -318,7 +269,6 @@ int ICertificateUtils::createSelfSignedCertMS()
     {
       nResult = ::GetLastError();
       ILogR("Error in first ::CertStrToName", nResult);
-      ::CryptReleaseContext(hCryptProv, 0);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
@@ -336,7 +286,6 @@ int ICertificateUtils::createSelfSignedCertMS()
     {
       nResult = ::GetLastError();
       ILogR("Error in second ::CertStrToName", nResult);
-      ::CryptReleaseContext(hCryptProv, 0);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
@@ -346,7 +295,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   DWORD dwKeyLength = 0x08000000;
   HCRYPTKEY hCryptKey = NULL;
   fResult = ::CryptGenKey(
-    hCryptProv,
+    cryptProv.getHCryptProv(),
     AT_KEYEXCHANGE,
     /*dwKeyLength | */CRYPT_EXPORTABLE,
     &hCryptKey);
@@ -354,7 +303,6 @@ int ICertificateUtils::createSelfSignedCertMS()
   {
     nResult = ::GetLastError();
     ILogR("Error in ::CryptGenKey", nResult);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -362,7 +310,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   // creating the self-signed certificate
   // may be it is not right
   wchar_t wstrContName[500] = L"";
-  wcscpy(wstrContName, wstrKeyContainerName.c_str());
+  wcscpy(wstrContName, cryptProv.getContainerName().c_str());
   //::mbstowcs(
 
   CRYPT_KEY_PROV_INFO keyProvInfo = {0};
@@ -378,7 +326,7 @@ int ICertificateUtils::createSelfSignedCertMS()
 
   CERT_EXTENSIONS certExts = {0};
   PCCERT_CONTEXT pSelfSignContext = ::CertCreateSelfSignCertificate(
-    hCryptProv,
+    cryptProv.getHCryptProv(),
     &certNameBlob,
     0,
     &keyProvInfo,
@@ -391,7 +339,6 @@ int ICertificateUtils::createSelfSignedCertMS()
     nResult = ::GetLastError();
     ILogR("Error in ::CertCreateSelfSignCertificate", nResult);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -409,15 +356,28 @@ int ICertificateUtils::createSelfSignedCertMS()
     ILogR("Error in ::CertAddCertificateContextToStore", nResult);
     ::CertFreeCertificateContext(pSelfSignContext);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
 
   ::CertFreeCertificateContext(pSelfSignContext);
 
+   // export certificate to PFX file
+  nResult = toPFXFile(
+    hCertStore,
+    L"qwerty",
+    "test_cert.pfx");
+  if(nResult)
+  {
+    ILogR("Error in toPFXFile", nResult);
+    ::CertFreeCertificateContext(pCertContext);
+    ::CryptDestroyKey(hCryptKey);
+    ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
+    return nResult;
+  }
+
   // export private key
-  DWORD dwKBufferSize = 0;
+  /*DWORD dwKBufferSize = 0;
   fResult = ::CryptExportKey(
     hCryptKey,
     NULL,
@@ -431,7 +391,6 @@ int ICertificateUtils::createSelfSignedCertMS()
     ILogR("Error in first ::CryptExportKey", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -450,7 +409,6 @@ int ICertificateUtils::createSelfSignedCertMS()
     ILogR("Error in second ::CryptExportKey", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -469,7 +427,6 @@ int ICertificateUtils::createSelfSignedCertMS()
       ILogR("Error in first ::CryptBinaryToStringA", nResult);
       ::CertFreeCertificateContext(pCertContext);
       ::CryptDestroyKey(hCryptKey);
-      ::CryptReleaseContext(hCryptProv, 0);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
@@ -486,13 +443,12 @@ int ICertificateUtils::createSelfSignedCertMS()
       ILogR("Error in second ::CryptBinaryToStringA", nResult);
       ::CertFreeCertificateContext(pCertContext);
       ::CryptDestroyKey(hCryptKey);
-      ::CryptReleaseContext(hCryptProv, 0);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
     delete[] pBuffer;
   }
-  delete[] pKBuffer;
+  delete[] pKBuffer; */
 
   // export certificate to string file
   DWORD dwBufferSize = 0;
@@ -508,7 +464,6 @@ int ICertificateUtils::createSelfSignedCertMS()
     ILogR("Error in first ::CryptBinaryToStringA", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -525,7 +480,6 @@ int ICertificateUtils::createSelfSignedCertMS()
     ILogR("Error in second ::CryptBinaryToStringA", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -540,14 +494,12 @@ int ICertificateUtils::createSelfSignedCertMS()
     ILogR("Error in toFile", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
-    ::CryptReleaseContext(hCryptProv, 0);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
 
   ::CertFreeCertificateContext(pCertContext);
   ::CryptDestroyKey(hCryptKey);
-  ::CryptReleaseContext(hCryptProv, 0);
   fResult = ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
   if(!fResult)
   {
@@ -556,22 +508,335 @@ int ICertificateUtils::createSelfSignedCertMS()
     return nResult;
   }
 
-  fResult = ::CryptAcquireContext(
-    &hCryptProv,
-    wstrKeyContainerName.c_str(),
-    MS_DEF_PROV, // may be another like MS_DEF_RSA_SCHANNEL_PROV
-    PROV_RSA_FULL,
-    CRYPT_DELETEKEYSET | CRYPT_MACHINE_KEYSET);
+  return 0;
+}
+
+int ICertificateUtils::signMessage(
+  const TBlob& aMessage,
+  TBlob& aSignedMessage)
+{
+  TCertificate cert;
+
+  CRYPT_SIGN_MESSAGE_PARA signMsgParams = {0};
+  signMsgParams.cbSize = sizeof(signMsgParams);
+  signMsgParams.dwMsgEncodingType = X509_ASN_ENCODING | PKCS_7_ASN_ENCODING ;
+  signMsgParams.pSigningCert = &cert.getCertContext();
+  signMsgParams.HashAlgorithm.pszObjId = szOID_RSA_SHA1RSA;
+
+  const BYTE* arrMessages[] = {&aMessage[0]};
+  DWORD sizes[] = {aMessage.size()};
+  DWORD dwOutSize = 0;
+  BOOL fResult = ::CryptSignMessage(
+    &signMsgParams,
+    TRUE,
+    1,
+    arrMessages,
+    sizes,
+    NULL,
+    &dwOutSize);
   if(!fResult)
   {
-    nResult = ::GetLastError();
-    ILogR("Error in ::CryptAcquireContext(CRYPT_DELETEKEYSET)", nResult);
+    int nResult = ::GetLastError();
+    ILogR("Error in first ::CryptSignMessage", nResult);
+    return nResult;
+  }
+
+  aSignedMessage.resize(dwOutSize);
+  fResult = ::CryptSignMessage(
+    &signMsgParams,
+    TRUE,
+    1,
+    arrMessages,
+    sizes,
+    &aSignedMessage[0],
+    &dwOutSize);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in second ::CryptSignMessage", nResult);
     return nResult;
   }
 
   return 0;
 }
 
+int ICertificateUtils::verifyMessage(
+  const TBlob& aSignedMessage,
+  TBlob& aMessage)
+{
+  CRYPT_VERIFY_MESSAGE_PARA veriMsgParams = {0};
+  veriMsgParams.cbSize = sizeof(veriMsgParams);
+  veriMsgParams.dwMsgAndCertEncodingType = X509_ASN_ENCODING 
+    | PKCS_7_ASN_ENCODING;
+
+  PCCERT_CONTEXT pCert = NULL;
+  DWORD dwOutSize = 0;
+  BOOL fResult = ::CryptVerifyMessageSignature(
+    &veriMsgParams,
+    0,
+    &aSignedMessage[0],
+    aSignedMessage.size(),
+    NULL,
+    &dwOutSize,
+    &pCert);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in first ::CryptVerifyMessageSignature", nResult);
+    return nResult;
+  }
+
+  aMessage.resize(dwOutSize);
+  fResult = ::CryptVerifyMessageSignature(
+    &veriMsgParams,
+    0,
+    &aSignedMessage[0],
+    aSignedMessage.size(),
+    &aMessage[0],
+    &dwOutSize,
+    &pCert);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in second ::CryptVerifyMessageSignature", nResult);
+    return nResult;
+  }
+
+  return 0;
+}
+
+int ICertificateUtils::signHashMessage(
+  const TBlob& aMessage,
+  TBlob& aSignedMessage)
+{
+  TCertificate cert;
+
+  DWORD dwPropSize = 0;
+  BOOL fResult = ::CertGetCertificateContextProperty(
+    &cert.getCertContext(),
+    CERT_KEY_PROV_INFO_PROP_ID,
+    NULL,
+    &dwPropSize);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in first ::CertGetCertificateContextProperty", nResult);
+    return nResult;
+  }
+
+  TBlob vKeyProvMem(dwPropSize);
+  fResult = ::CertGetCertificateContextProperty(
+    &cert.getCertContext(),
+    CERT_KEY_PROV_INFO_PROP_ID,
+    &vKeyProvMem[0],
+    &dwPropSize);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in second ::CertGetCertificateContextProperty", nResult);
+    return nResult;
+  }
+  CRYPT_KEY_PROV_INFO* pKeyProvInfo = reinterpret_cast<CRYPT_KEY_PROV_INFO*>(
+    &vKeyProvMem[0]);
+
+  //TCryptProv cryptProv(pKeyProvInfo->pwszContainerName);
+
+  HCRYPTPROV hCryptProv = NULL;
+  DWORD dwKeySpec = 0;
+  BOOL fNeedToRelease = FALSE;
+  fResult = ::CryptAcquireCertificatePrivateKey(
+    &cert.getCertContext(),
+    0,
+    NULL,
+    &hCryptProv,
+    &dwKeySpec,
+    &fNeedToRelease);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in second ::CryptAcquireCertificatePrivateKey", nResult);
+    return nResult;
+  }
+  /*HCRYPTKEY hKey = NULL;
+  fResult = ::CryptGetUserKey(
+    cryptProv.getHCryptProv(),
+    AT_KEYEXCHANGE,
+    &hKey);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in ::CryptGetUserKey", nResult);
+    return nResult;
+  }*/
+
+  HCRYPTHASH hHash = NULL;
+  fResult = ::CryptCreateHash(
+    hCryptProv,//cryptProv.getHCryptProv(),
+    CALG_SHA1,
+    NULL,
+    0,
+    &hHash);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in ::CryptCreateHash", nResult);
+    //::CryptDestroyKey(hKey);
+    return nResult;
+  }
+
+  fResult = ::CryptHashData(
+    hHash,
+    &aMessage[0],
+    aMessage.size(),
+    0);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in ::CryptHashData", nResult);
+    //::CryptDestroyKey(hKey);
+    ::CryptDestroyHash(hHash);
+    return nResult;
+  }
+
+  DWORD dwOutSize = 0;
+  fResult = ::CryptSignHash(
+    hHash,
+    AT_KEYEXCHANGE,
+    NULL,
+    0,
+    NULL,
+    &dwOutSize);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in first ::CryptSignHash", nResult);
+    //::CryptDestroyKey(hKey);
+    ::CryptDestroyHash(hHash);
+    return nResult;
+  }
+
+  aSignedMessage.resize(dwOutSize);
+  fResult = ::CryptSignHash(
+    hHash,
+    AT_KEYEXCHANGE,
+    NULL,
+    0,
+    &aSignedMessage[0],
+    &dwOutSize);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in second ::CryptSignHash", nResult);
+    //::CryptDestroyKey(hKey);
+    ::CryptDestroyHash(hHash);
+    return nResult;
+  }
+
+  //::CryptDestroyKey(hKey);
+  ::CryptDestroyHash(hHash);
+
+  return 0;
+}
+
+int ICertificateUtils::verifyHashMessage(
+  const TBlob& aSignedMessage,
+  const TBlob& aMessage)
+{
+  TCertificate cert;
+
+  DWORD dwPropSize = 0;
+  BOOL fResult = ::CertGetCertificateContextProperty(
+    &cert.getCertContext(),
+    CERT_KEY_PROV_INFO_PROP_ID,
+    NULL,
+    &dwPropSize);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in first ::CertGetCertificateContextProperty", nResult);
+    return nResult;
+  }
+
+  TBlob vKeyProvMem(dwPropSize);
+  fResult = ::CertGetCertificateContextProperty(
+    &cert.getCertContext(),
+    CERT_KEY_PROV_INFO_PROP_ID,
+    &vKeyProvMem[0],
+    &dwPropSize);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in second ::CertGetCertificateContextProperty", nResult);
+    return nResult;
+  }
+  CRYPT_KEY_PROV_INFO* pKeyProvInfo = reinterpret_cast<CRYPT_KEY_PROV_INFO*>(
+    &vKeyProvMem[0]);
+
+  TCryptProv cryptProv(pKeyProvInfo->pwszContainerName);
+
+  HCRYPTHASH hHash = NULL;
+  fResult = ::CryptCreateHash(
+    cryptProv.getHCryptProv(),
+    CALG_SHA1,
+    NULL,
+    0,
+    &hHash);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in ::CryptCreateHash", nResult);
+    return nResult;
+  }
+
+  fResult = ::CryptHashData(
+    hHash,
+    &aMessage[0],
+    aMessage.size(),
+    0);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in ::CryptHashData", nResult);
+    ::CryptDestroyHash(hHash);
+    return nResult;
+  }
+
+  // obtain public key
+  HCRYPTKEY hPubKey = NULL;
+  fResult = ::CryptImportPublicKeyInfo(
+    cryptProv.getHCryptProv(),
+    X509_ASN_ENCODING,
+    &cert.getCertContext().pCertInfo->SubjectPublicKeyInfo,
+    &hPubKey);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in ::CryptImportPublicKeyInfo", nResult);
+    ::CryptDestroyHash(hHash);
+    return nResult;
+  }
+
+  fResult = ::CryptVerifySignature(
+    hHash,
+    &aSignedMessage[0],
+    aSignedMessage.size(),
+    hPubKey,
+    NULL,
+    0);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in ::CryptVerifySignature", nResult);
+    ::CryptDestroyKey(hPubKey);
+    ::CryptDestroyHash(hHash);
+    return nResult;
+  }
+
+  ::CryptDestroyKey(hPubKey);
+  ::CryptDestroyHash(hHash);
+
+  return 0;
+}
 
 int ICertificateUtils::toPFXFile(
   HCERTSTORE ahCertStore,

@@ -66,6 +66,7 @@
     <ClCompile Include="aes_test.cpp" />
     <ClCompile Include="byteSeq.cpp" />
     <ClCompile Include="byteSeq_test.cpp" />
+    <ClCompile Include="iCertificateUtils_test.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="rsa.cpp" />
     <ClCompile Include="sha1.cpp" />
@@ -77,10 +78,14 @@
     <ClInclude Include="aes_test.h" />
     <ClInclude Include="byteSeq.h" />
     <ClInclude Include="byteSeq_test.h" />
+    <ClInclude Include="iCertificateUtils_test.h" />
     <ClInclude Include="rsa.h" />
     <ClInclude Include="sha1.h" />
     <ClInclude Include="sha1_test.h" />
     <ClInclude Include="testUtils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\Debug\SChannel.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

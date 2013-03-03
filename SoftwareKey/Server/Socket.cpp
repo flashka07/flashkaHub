@@ -99,4 +99,6 @@ int Socket::initialize()
     ::WSACleanup();
     return 1;
   }
+
+  return 0;
 }
