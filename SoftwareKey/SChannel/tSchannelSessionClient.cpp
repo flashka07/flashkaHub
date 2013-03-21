@@ -6,8 +6,9 @@
 #include "iLog.h"
 
 TSchannelSessionClient::TSchannelSessionClient()
-  : m_ulContextAttribs(ISC_REQ_MANUAL_CRED_VALIDATION),
-    m_dwCredFlags(0),
+  : m_fServerMode(false),
+    m_ulContextAttribs(c_dwClientContextAttr),
+    m_dwCredFlags(c_dwClientCredFlags),
     m_fEstablished(false),
     m_pCertificate(NULL),
     m_pSocket(NULL)
@@ -23,7 +24,8 @@ TSchannelSessionClient::~TSchannelSessionClient()
 
 int TSchannelSessionClient::authenticate(
   ISocket& aSocket,
-  const ICertificate& aCertificate)
+  const ICertificate& aCertificate,
+  bool afServerMode)
 {
   shutdown(false);
 
@@ -68,7 +70,7 @@ int TSchannelSessionClient::renegotiate()
 {
   if(!isEstablished())
     return 0;
-  return authenticate(*m_pSocket, *m_pCertificate);
+  return authenticate(*m_pSocket, *m_pCertificate, m_fServerMode);
 }
 
 int TSchannelSessionClient::shutdown(bool afSendNotification)
@@ -163,6 +165,11 @@ SecHandle& TSchannelSessionClient::getContext()
   return m_hContext;
 }
 
+bool TSchannelSessionClient::isInServerMode() const
+{
+  return m_fServerMode;
+}
+
 bool TSchannelSessionClient::isEstablished() const
 {
   return m_fEstablished;
@@ -192,16 +199,16 @@ int TSchannelSessionClient::acquireCredentials(
 
   SCHANNEL_CRED schCred = {0};
   schCred.dwVersion = SCHANNEL_CRED_VERSION;
- /* schCred.cCreds = 1;
+  schCred.cCreds = 1;
   schCred.paCred = &pcCertContext;
-  schCred.hRootStore = aCertificate.getStoreHandle();*/
+  schCred.hRootStore = aCertificate.getStoreHandle();
   schCred.grbitEnabledProtocols = c_dwClientAllowedProtocols;
   schCred.dwFlags = m_dwCredFlags;
   
   TimeStamp tsLifetime;
   SECURITY_STATUS ssResult = ::AcquireCredentialsHandle(
       NULL,
-      "Schannel",
+      UNISP_NAME,//"Schannel",
       SECPKG_CRED_OUTBOUND,
       NULL,
       &schCred,
@@ -220,7 +227,7 @@ int TSchannelSessionClient::acquireCredentials(
 
 int TSchannelSessionClient::authenticateOnStream(
   ISocketStream& aSockStream,
-  std::vector<BYTE>& avExtraData)
+  TBlob& avExtraData)
 {
   // prepare output
   SecBufferDesc outBuffDesc = {0};
@@ -231,7 +238,7 @@ int TSchannelSessionClient::authenticateOnStream(
 
   // prepare input
   size_t szBufferSize = 100500;
-  std::vector<BYTE> vInputBuffer(szBufferSize, 0); // TODO: what size?
+  TBlob vInputBuffer(szBufferSize, 0); // TODO: what size?
   SecBufferDesc inBuffDesc = {0};
   SecBuffer inSecBuff[2] = {0};
   inBuffDesc.ulVersion = 0;
@@ -337,7 +344,15 @@ int TSchannelSessionClient::authenticateOnStream(
       }
     }
     
-    // TODO: SEC_I_INCOMPLETE_CREDENTIALS
+    // TODO: may be provide a valid certificate
+    if(ssResult == SEC_I_INCOMPLETE_CREDENTIALS)
+    {
+      ILogR(
+        "Client must provide a valid certificate. Current is not valid",
+        ssResult);
+      freeContextBuff(outBuffDesc);
+      return ssResult;
+    }
 
     fDone = !(
       ssResult == SEC_I_CONTINUE_NEEDED ||

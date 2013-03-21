@@ -5,12 +5,19 @@ class ICertificate;
 //class CredHandle;
 //class SecHandle;
 
-class ISecurityChannel
+class __declspec(dllexport) ISecurityChannel
 {
 public:
+  static ISecurityChannel* create();
+  static ISecurityChannel* createInstance();
+
+  virtual ~ISecurityChannel();
+
   virtual int authenticate(
     ISocket& aSocket,
-    const ICertificate& aCertificate) = 0;
+    const ICertificate& aCertificate,
+    bool afServerMode = false) = 0;
+
   virtual int renegotiate() = 0;
   virtual int shutdown(
     bool afSendNotification) = 0;
@@ -18,6 +25,7 @@ public:
   virtual CredHandle& getCreditionals() = 0;
   virtual SecHandle& getContext() = 0;
 
+  virtual bool isInServerMode() const = 0;
   virtual bool isEstablished() const = 0;
 
   virtual ISocket* getAttachedSocket() = 0;

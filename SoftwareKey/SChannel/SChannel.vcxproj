@@ -69,6 +69,7 @@
     <ClCompile Include="iSchannelSessionClient.cpp" />
     <ClCompile Include="iSchannelUtils.cpp" />
     <ClCompile Include="iSchannelSessionServer.cpp" />
+    <ClCompile Include="iSecurityChannel.cpp" />
     <ClCompile Include="iSecurityChannelStream.cpp" />
     <ClCompile Include="iSocket.cpp" />
     <ClCompile Include="iSocketStream.cpp" />
@@ -76,6 +77,7 @@
     <ClCompile Include="tCryptProv.cpp" />
     <ClCompile Include="tSchannelSessionClient.cpp" />
     <ClCompile Include="tSchannelSessionServer.cpp" />
+    <ClCompile Include="tSecurityChannel.cpp" />
     <ClCompile Include="tSecurityChannelStream.cpp" />
     <ClCompile Include="tSocket.cpp" />
     <ClCompile Include="tSocketStream.cpp" />
@@ -92,10 +94,12 @@
     <ClInclude Include="iSecurityChannelStream.h" />
     <ClInclude Include="iSocket.h" />
     <ClInclude Include="iSocketStream.h" />
+    <ClInclude Include="tBlob.h" />
     <ClInclude Include="tCertificate.h" />
     <ClInclude Include="tCryptProv.h" />
     <ClInclude Include="tSchannelSessionClient.h" />
     <ClInclude Include="tSchannelSessionServer.h" />
+    <ClInclude Include="tSecurityChannel.h" />
     <ClInclude Include="tSecurityChannelStream.h" />
     <ClInclude Include="tSocket.h" />
     <ClInclude Include="tSocketStream.h" />

@@ -63,6 +63,12 @@
     <ClCompile Include="tCryptProv.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tSecurityChannel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="iSecurityChannel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="iSocket.h">
@@ -117,6 +123,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tCryptProv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tBlob.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tSecurityChannel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

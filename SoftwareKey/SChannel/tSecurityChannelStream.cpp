@@ -270,7 +270,7 @@ int TSecurityChannelStream::receive(
       size_t szAuthExtraSize = m_pSecurityChannel->getExtraDataSize();
       if(szAuthExtraSize)
       {
-        std::vector<BYTE> vExtra(szAuthExtraSize);
+        TBlob vExtra(szAuthExtraSize);
         m_pSecurityChannel->getExtraData(&vExtra[0]);
         memcpy(
           &m_vInBuffer[0],

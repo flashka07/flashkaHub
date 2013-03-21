@@ -1,8 +1,8 @@
 #pragma once
-#include <vector>
 
-typedef unsigned char BYTE;
-typedef std::vector<BYTE> TBlob;
+#include "tBlob.h"
+
+class ICertificate;
 
 class __declspec(dllexport) ICertificateUtils
 {
@@ -14,18 +14,22 @@ public:
 
   static int signMessage(
     const TBlob& aMessage,
+    const ICertificate& aCert,
     TBlob& aSignedMessage);
 
   static int verifyMessage(
     const TBlob& aSignedMessage,
+    const ICertificate& aCert,
     TBlob& aMessage);
 
   static int signHashMessage(
     const TBlob& aMessage,
+    const ICertificate& aCert,
     TBlob& aSignedMessage);
 
   static int verifyHashMessage(
     const TBlob& aSignedMessage,
+    const ICertificate& aCert,
     const TBlob& aMessage);
 
   static int toPFXFile(

@@ -5,12 +5,11 @@
 #include <Windows.h>
 #include <WinCrypt.h>
 #include <fstream>
-#include <vector> // buffers
 
 #include "iCertificateUtils.h"
 
 #include "tCryptProv.h"
-#include "tCertificate.h" // temporary
+#include "iCertificate.h"
 
 #include "iLog.h"
 
@@ -21,7 +20,6 @@
 int ICertificateUtils::createSelfSignedCert()
 {
   // acquire crypt context
-
   TCryptProv cryptProv(L"Test Key Container Name");
 
   int nResult = 0;
@@ -513,14 +511,13 @@ int ICertificateUtils::createSelfSignedCertMS()
 
 int ICertificateUtils::signMessage(
   const TBlob& aMessage,
+  const ICertificate& aCert,
   TBlob& aSignedMessage)
 {
-  TCertificate cert;
-
   CRYPT_SIGN_MESSAGE_PARA signMsgParams = {0};
   signMsgParams.cbSize = sizeof(signMsgParams);
   signMsgParams.dwMsgEncodingType = X509_ASN_ENCODING | PKCS_7_ASN_ENCODING ;
-  signMsgParams.pSigningCert = &cert.getCertContext();
+  signMsgParams.pSigningCert = &aCert.getCertContext();
   signMsgParams.HashAlgorithm.pszObjId = szOID_RSA_SHA1RSA;
 
   const BYTE* arrMessages[] = {&aMessage[0]};
@@ -562,6 +559,7 @@ int ICertificateUtils::signMessage(
 
 int ICertificateUtils::verifyMessage(
   const TBlob& aSignedMessage,
+  const ICertificate& aCert,
   TBlob& aMessage)
 {
   CRYPT_VERIFY_MESSAGE_PARA veriMsgParams = {0};
@@ -607,71 +605,14 @@ int ICertificateUtils::verifyMessage(
 
 int ICertificateUtils::signHashMessage(
   const TBlob& aMessage,
+  const ICertificate& aCert,
   TBlob& aSignedMessage)
 {
-  TCertificate cert;
-
-  DWORD dwPropSize = 0;
-  BOOL fResult = ::CertGetCertificateContextProperty(
-    &cert.getCertContext(),
-    CERT_KEY_PROV_INFO_PROP_ID,
-    NULL,
-    &dwPropSize);
-  if(!fResult)
-  {
-    int nResult = ::GetLastError();
-    ILogR("Error in first ::CertGetCertificateContextProperty", nResult);
-    return nResult;
-  }
-
-  TBlob vKeyProvMem(dwPropSize);
-  fResult = ::CertGetCertificateContextProperty(
-    &cert.getCertContext(),
-    CERT_KEY_PROV_INFO_PROP_ID,
-    &vKeyProvMem[0],
-    &dwPropSize);
-  if(!fResult)
-  {
-    int nResult = ::GetLastError();
-    ILogR("Error in second ::CertGetCertificateContextProperty", nResult);
-    return nResult;
-  }
-  CRYPT_KEY_PROV_INFO* pKeyProvInfo = reinterpret_cast<CRYPT_KEY_PROV_INFO*>(
-    &vKeyProvMem[0]);
-
-  //TCryptProv cryptProv(pKeyProvInfo->pwszContainerName);
-
-  HCRYPTPROV hCryptProv = NULL;
-  DWORD dwKeySpec = 0;
-  BOOL fNeedToRelease = FALSE;
-  fResult = ::CryptAcquireCertificatePrivateKey(
-    &cert.getCertContext(),
-    0,
-    NULL,
-    &hCryptProv,
-    &dwKeySpec,
-    &fNeedToRelease);
-  if(!fResult)
-  {
-    int nResult = ::GetLastError();
-    ILogR("Error in second ::CryptAcquireCertificatePrivateKey", nResult);
-    return nResult;
-  }
-  /*HCRYPTKEY hKey = NULL;
-  fResult = ::CryptGetUserKey(
-    cryptProv.getHCryptProv(),
-    AT_KEYEXCHANGE,
-    &hKey);
-  if(!fResult)
-  {
-    int nResult = ::GetLastError();
-    ILogR("Error in ::CryptGetUserKey", nResult);
-    return nResult;
-  }*/
+  TCryptProv cryptProv(aCert);
 
   HCRYPTHASH hHash = NULL;
-  fResult = ::CryptCreateHash(
-    hCryptProv,//cryptProv.getHCryptProv(),
+  BOOL fResult = ::CryptCreateHash(
+    cryptProv.getHCryptProv(),
     CALG_SHA1,
     NULL,
     0,
@@ -680,7 +621,6 @@ int ICertificateUtils::signHashMessage(
   {
     int nResult = ::GetLastError();
     ILogR("Error in ::CryptCreateHash", nResult);
-    //::CryptDestroyKey(hKey);
     return nResult;
   }
 
@@ -693,7 +633,6 @@ int ICertificateUtils::signHashMessage(
   {
     int nResult = ::GetLastError();
     ILogR("Error in ::CryptHashData", nResult);
-    //::CryptDestroyKey(hKey);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
@@ -710,7 +649,6 @@ int ICertificateUtils::signHashMessage(
   {
     int nResult = ::GetLastError();
     ILogR("Error in first ::CryptSignHash", nResult);
-    //::CryptDestroyKey(hKey);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
@@ -727,12 +665,10 @@ int ICertificateUtils::signHashMessage(
   {
     int nResult = ::GetLastError();
     ILogR("Error in second ::CryptSignHash", nResult);
-    //::CryptDestroyKey(hKey);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
 
-  //::CryptDestroyKey(hKey);
   ::CryptDestroyHash(hHash);
 
   return 0;
@@ -740,42 +676,13 @@ int ICertificateUtils::signHashMessage(
 
 int ICertificateUtils::verifyHashMessage(
   const TBlob& aSignedMessage,
+  const ICertificate& aCert,
   const TBlob& aMessage)
 {
-  TCertificate cert;
-
-  DWORD dwPropSize = 0;
-  BOOL fResult = ::CertGetCertificateContextProperty(
-    &cert.getCertContext(),
-    CERT_KEY_PROV_INFO_PROP_ID,
-    NULL,
-    &dwPropSize);
-  if(!fResult)
-  {
-    int nResult = ::GetLastError();
-    ILogR("Error in first ::CertGetCertificateContextProperty", nResult);
-    return nResult;
-  }
-
-  TBlob vKeyProvMem(dwPropSize);
-  fResult = ::CertGetCertificateContextProperty(
-    &cert.getCertContext(),
-    CERT_KEY_PROV_INFO_PROP_ID,
-    &vKeyProvMem[0],
-    &dwPropSize);
-  if(!fResult)
-  {
-    int nResult = ::GetLastError();
-    ILogR("Error in second ::CertGetCertificateContextProperty", nResult);
-    return nResult;
-  }
-  CRYPT_KEY_PROV_INFO* pKeyProvInfo = reinterpret_cast<CRYPT_KEY_PROV_INFO*>(
-    &vKeyProvMem[0]);
-
-  TCryptProv cryptProv(pKeyProvInfo->pwszContainerName);
+  TCryptProv cryptProv(aCert);
 
   HCRYPTHASH hHash = NULL;
-  fResult = ::CryptCreateHash(
+  BOOL fResult = ::CryptCreateHash(
     cryptProv.getHCryptProv(),
     CALG_SHA1,
     NULL,
@@ -806,7 +713,7 @@ int ICertificateUtils::verifyHashMessage(
   fResult = ::CryptImportPublicKeyInfo(
     cryptProv.getHCryptProv(),
     X509_ASN_ENCODING,
-    &cert.getCertContext().pCertInfo->SubjectPublicKeyInfo,
+    &aCert.getCertContext().pCertInfo->SubjectPublicKeyInfo,
     &hPubKey);
   if(!fResult)
   {
@@ -857,7 +764,7 @@ int ICertificateUtils::toPFXFile(
     return nResult;
   }
 
-  std::vector<BYTE> vBuffer(blobExport.cbData, 0);
+  TBlob vBuffer(blobExport.cbData, 0);
   blobExport.pbData = &vBuffer[0];
   fResult = ::PFXExportCertStoreEx(
     ahCertStore,

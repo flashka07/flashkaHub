@@ -1,14 +1,14 @@
-#include "tSchannelSessionServer.h"
+#include "tSecurityChannel.h"
 
 #include "iSocketStream.h"
 #include "iCertificate.h"
 #include "iSchannelUtils.h"
 #include "iLog.h"
 
-TSchannelSessionServer::TSchannelSessionServer()
-  : m_fServerMode(true),
-    m_ulContextAttribs(c_dwServerContextAttr),
-    m_dwCredFlags(c_dwServerCredFlags),
+TSecurityChannel::TSecurityChannel()
+  : m_fServerMode(false),
+    m_ulContextAttribs(c_dwClientContextAttr),
+    m_dwCredFlags(c_dwClientCredFlags),
     m_fEstablished(false),
     m_pCertificate(NULL),
     m_pSocket(NULL)
@@ -17,17 +17,19 @@ TSchannelSessionServer::TSchannelSessionServer()
   ::memset(&m_hContext, 0, sizeof(m_hContext));
 }
 
-TSchannelSessionServer::~TSchannelSessionServer()
+TSecurityChannel::~TSecurityChannel()
 {
   shutdown(false);
 }
 
-int TSchannelSessionServer::authenticate(
+int TSecurityChannel::authenticate(
   ISocket& aSocket,
   const ICertificate& aCertificate,
   bool afServerMode)
 {
   shutdown(false);
+
+  setMode(afServerMode);
 
   m_pCertificate = &aCertificate;
   m_pSocket = &aSocket;
@@ -52,145 +54,81 @@ int TSchannelSessionServer::authenticate(
     ILogR("Error in attach to socket", nResult);
     return nResult;
   }
-  TBlob vExtraData;
   nResult = authenticateOnStream(
     *spStream,
-    vExtraData);
+    m_vExtraData);
   if(nResult)
   {
     ILogR("Error in authenticateOnStream", nResult);
     return nResult;
   }
+
   m_fEstablished = true;
-  ILog("> Client authenticated");
+  ILog("> Authentication succeed");
 
   return 0;
 }
 
-int TSchannelSessionServer::renegotiate()
+int TSecurityChannel::renegotiate()
 {
   if(!isEstablished())
     return 0;
   return authenticate(*m_pSocket, *m_pCertificate, m_fServerMode);
 }
 
-int TSchannelSessionServer::shutdown(bool afSendNotification)
+int TSecurityChannel::shutdown(bool afSendNotification)
 {
   if(!isEstablished())
     return 0;
-  m_fEstablished = false;
-  ISocket* pSock = m_pSocket;
-  m_pSocket = NULL;
-
-  DWORD dwShutdownToken = SCHANNEL_SHUTDOWN;
-  SecBufferDesc shutDownBufferDesc;
-  SecBuffer shutDownBuffers[1];
-  shutDownBufferDesc.cBuffers = 1;
-  shutDownBufferDesc.pBuffers = shutDownBuffers;
-  shutDownBufferDesc.ulVersion = SECBUFFER_VERSION;
-  shutDownBuffers[0].pvBuffer = &dwShutdownToken;
-  shutDownBuffers[0].BufferType = SECBUFFER_TOKEN;
-  shutDownBuffers[0].cbBuffer = sizeof(dwShutdownToken);
-
-  ::ApplyControlToken(&m_hContext, &shutDownBufferDesc);
-
-  shutDownBuffers[0].BufferType = SECBUFFER_TOKEN;
-  shutDownBuffers[0].pvBuffer = NULL;
-  shutDownBuffers[0].cbBuffer = NULL;
-
-  // TODO: may be print ulAttribs and stLifetime
-  ULONG ulContextAttr = 0;
-  TimeStamp tsLifetime;
-  SECURITY_STATUS ssResult = ::AcceptSecurityContext(
-    &m_hCred, 
-    &m_hContext, 
-    NULL,
-    m_ulContextAttribs | ISC_REQ_ALLOCATE_MEMORY, // mb another flags
-    0, 
-    NULL, 
-    &shutDownBufferDesc, 
-    &ulContextAttr, 
-    &tsLifetime);
-  if(ssResult < 0)
+  
+  int nResult = shutdown_impl(afSendNotification);
+  if(nResult)
   {
-    ILogR("Error in ::AcceptSecurityContext", ssResult);
-    freeInnerResources();
-    return ssResult;
+    ILogR("Error in shutdown_impl", nResult);
+    return nResult;
   }
-
-  freeInnerResources();
-
-  if(afSendNotification)
-  {
-    std::auto_ptr<ISocketStream> spStream(
-    ISocketStream::create());
-    if(!spStream.get())
-    {
-      ILog("!!! Cannot create ISocketStream");
-      freeContextBuff(shutDownBufferDesc);
-      return -3;
-    }
-    int nResult = spStream->attach(*m_pSocket);
-    if(nResult)
-    {
-      ILogR("Error in attach to socket", nResult);
-      freeContextBuff(shutDownBufferDesc);
-      return nResult;
-    }
-    nResult = spStream->send(
-      shutDownBuffers[0].pvBuffer,
-      shutDownBuffers[0].cbBuffer);
-    if(!nResult)
-    {
-      ILogR("cannot send shutdown message", nResult);
-      freeContextBuff(shutDownBufferDesc);
-      return nResult;
-    }
-  }
-
-  freeContextBuff(shutDownBufferDesc);
 
   return 0;
 }
 
-CredHandle& TSchannelSessionServer::getCreditionals()
+CredHandle& TSecurityChannel::getCreditionals()
 {
   return m_hCred;
 }
 
-SecHandle& TSchannelSessionServer::getContext()
+SecHandle& TSecurityChannel::getContext()
 {
   return m_hContext;
 }
 
-bool TSchannelSessionServer::isInServerMode() const
+bool TSecurityChannel::isInServerMode() const
 {
   return m_fServerMode;
 }
 
-bool TSchannelSessionServer::isEstablished() const
+bool TSecurityChannel::isEstablished() const
 {
   return m_fEstablished;
 }
 
-ISocket* TSchannelSessionServer::getAttachedSocket()
+ISocket* TSecurityChannel::getAttachedSocket()
 {
   return m_pSocket;
 }
 
-size_t TSchannelSessionServer::getExtraDataSize() const
+size_t TSecurityChannel::getExtraDataSize() const
 {
   return m_vExtraData.size();
 }
 
-size_t TSchannelSessionServer::getExtraData(void* apBuffer) const
+size_t TSecurityChannel::getExtraData(void* apBuffer) const
 {
   size_t szCpy = getExtraDataSize();
   memcpy(apBuffer, &m_vExtraData[0], szCpy);
   return szCpy;
 }
 
-int TSchannelSessionServer::acquireCredentials(
+int TSecurityChannel::acquireCredentials(
   const ICertificate& aCertificate)
 {
   PCCERT_CONTEXT pcCertContext = &aCertificate.getCertContext();
@@ -205,15 +143,15 @@ int TSchannelSessionServer::acquireCredentials(
   
   TimeStamp tsLifetime;
   SECURITY_STATUS ssResult = ::AcquireCredentialsHandle(
-    NULL,
-    UNISP_NAME,//"Schannel",
-    SECPKG_CRED_INBOUND,
-    NULL,
-    &schCred,
-    NULL,
-    NULL,
-    &m_hCred,
-    &tsLifetime);
+      NULL,
+      UNISP_NAME,
+      isInServerMode() ? SECPKG_CRED_INBOUND : SECPKG_CRED_OUTBOUND,
+      NULL,
+      &schCred,
+      NULL,
+      NULL,
+      &m_hCred,
+      &tsLifetime);
   if(ssResult != SEC_E_OK)
   {
     ILogR("Error in ::AcquireCredentialsHandle", ssResult);
@@ -223,7 +161,7 @@ int TSchannelSessionServer::acquireCredentials(
   return 0;
 }
 
-int TSchannelSessionServer::authenticateOnStream(
+int TSecurityChannel::authenticateOnStream(
   ISocketStream& aSockStream,
   TBlob& avExtraData)
 {
@@ -236,7 +174,7 @@ int TSchannelSessionServer::authenticateOnStream(
 
   // prepare input
   size_t szBufferSize = 100500;
-  TBlob vInputBuffer(szBufferSize, 0); // what size?
+  TBlob vInputBuffer(szBufferSize, 0); // TODO: what size?
   SecBufferDesc inBuffDesc = {0};
   SecBuffer inSecBuff[2] = {0};
   inBuffDesc.ulVersion = 0;
@@ -247,9 +185,14 @@ int TSchannelSessionServer::authenticateOnStream(
   bool fDone = false;
   bool fFirstCall = true;
   size_t szBufferOffset = 0;
+  // for logs
+  std::string strFuncName(isInServerMode() 
+    ? "::AcceptSecurityContext"
+    : "::InitializeSecurityContext");
   do
   {
-    if(!szBufferOffset || ssResult == SEC_E_INCOMPLETE_MESSAGE)
+    if((!fFirstCall || isInServerMode()) && 
+       (!szBufferOffset || ssResult == SEC_E_INCOMPLETE_MESSAGE))
     {
       size_t szRead = 0;
       int nResult = aSockStream.receive(
@@ -283,6 +226,7 @@ int TSchannelSessionServer::authenticateOnStream(
     outSecBuff[1].pvBuffer = NULL;
 
     // print input
+    // temporary stringstream
     std::stringstream logStr;
     logStr << "Token buffer recieved " 
       << inSecBuff[0].cbBuffer << " bytes:";
@@ -291,8 +235,10 @@ int TSchannelSessionServer::authenticateOnStream(
 
     // TODO: may be print ulAttribs and stLifetime
     ULONG ulAttribs = 0;
-    TimeStamp stLifetime;
-    ssResult = ::AcceptSecurityContext(
+    TimeStamp tsLifetime;
+    if(isInServerMode())
+    {
+      ssResult = ::AcceptSecurityContext(
       &m_hCred,
       fFirstCall ? NULL : &m_hContext,
       &inBuffDesc,
@@ -301,13 +247,34 @@ int TSchannelSessionServer::authenticateOnStream(
       &m_hContext,
       &outBuffDesc,
       &ulAttribs,
-      &stLifetime);
-    ILogR("::AcceptSecurityContext result", ssResult);
+      &tsLifetime);
+    }
+    else
+    {
+      ssResult = ::InitializeSecurityContext(
+        &m_hCred,
+        fFirstCall ? NULL : &m_hContext,
+        "i.drozdov", // TODO: TARGET NAME
+        m_ulContextAttribs | ASC_REQ_ALLOCATE_MEMORY,
+        0,
+        0, // not used in Schannel
+        &inBuffDesc,
+        0,
+        (!fFirstCall) ? NULL : &m_hContext,
+        &outBuffDesc,
+        &ulAttribs,
+        &tsLifetime);
+    }
+    ILogR(strFuncName + " result", ssResult);
     if(outSecBuff[1].BufferType == SECBUFFER_ALERT &&
        outSecBuff[1].cbBuffer && outSecBuff[1].pvBuffer)
     {
       // show alert if exists
-      ILog(reinterpret_cast<char*>(outSecBuff[1].pvBuffer));
+      //ILog(reinterpret_cast<char*>(outSecBuff[1].pvBuffer));
+      ILog("\n++ Alert ++");
+      ISchannelUtils::printHexDump(
+        outSecBuff[1].cbBuffer, 
+        outSecBuff[1].pvBuffer);
     }
     fFirstCall = false;
     // need more data
@@ -315,7 +282,7 @@ int TSchannelSessionServer::authenticateOnStream(
       continue;
     if(ssResult < 0)
     {
-      ILogR("Error in ::AcceptSecurityContext", ssResult);
+      ILogR("Error in " + strFuncName, ssResult);
       ::DeleteSecurityContext(&m_hContext);
       // may be free outBuffDesc? 
       return ssResult;
@@ -331,6 +298,16 @@ int TSchannelSessionServer::authenticateOnStream(
         freeContextBuff(outBuffDesc);
         return ssResult;
       }
+    }
+    
+    // TODO: may be provide a valid certificate
+    if(!isInServerMode() && ssResult == SEC_I_INCOMPLETE_CREDENTIALS)
+    {
+      ILogR(
+        "Client must provide a valid certificate. Current is not valid",
+        ssResult);
+      freeContextBuff(outBuffDesc);
+      return ssResult;
     }
 
     fDone = !(
@@ -387,7 +364,108 @@ int TSchannelSessionServer::authenticateOnStream(
   return 0;
 }
 
-void TSchannelSessionServer::freeContextBuff(
+int TSecurityChannel::shutdown_impl(
+  bool afSendNotification)
+{
+  m_fEstablished = false;
+  ISocket* pSock = m_pSocket;
+  m_pSocket = NULL;
+
+  DWORD dwShutdownToken = SCHANNEL_SHUTDOWN;
+  SecBufferDesc shutDownBufferDesc;
+  SecBuffer shutDownBuffers[1];
+  shutDownBufferDesc.cBuffers = 1;
+  shutDownBufferDesc.pBuffers = shutDownBuffers;
+  shutDownBufferDesc.ulVersion = SECBUFFER_VERSION;
+  shutDownBuffers[0].pvBuffer = &dwShutdownToken;
+  shutDownBuffers[0].BufferType = SECBUFFER_TOKEN;
+  shutDownBuffers[0].cbBuffer = sizeof(dwShutdownToken);
+
+  ::ApplyControlToken(&m_hContext, &shutDownBufferDesc);
+
+  shutDownBuffers[0].BufferType = SECBUFFER_TOKEN;
+  shutDownBuffers[0].pvBuffer = NULL;
+  shutDownBuffers[0].cbBuffer = NULL;
+
+  // TODO: may be print ulAttribs and stLifetime
+  ULONG ulContextAttr = 0;
+  TimeStamp tsLifetime;
+  SECURITY_STATUS ssResult = SEC_E_OK;
+  // for logs
+  std::string strFuncName(isInServerMode() 
+    ? "::AcceptSecurityContext"
+    : "::InitializeSecurityContext");
+  if(isInServerMode())
+  {
+    ssResult = ::AcceptSecurityContext(
+    &m_hCred, 
+    &m_hContext, 
+    NULL,
+    m_ulContextAttribs | ISC_REQ_ALLOCATE_MEMORY, // mb another flags
+    0, 
+    NULL, 
+    &shutDownBufferDesc, 
+    &ulContextAttr, 
+    &tsLifetime);
+  }
+  else
+  {
+    SECURITY_STATUS ssResult = ::InitializeSecurityContext(
+      &m_hCred, 
+      &m_hContext, 
+      NULL,
+      m_ulContextAttribs | ISC_REQ_ALLOCATE_MEMORY, // mb another flags
+      0, 
+      0, 
+      NULL, 
+      0, 
+      NULL,
+      &shutDownBufferDesc, 
+      &ulContextAttr, 
+      &tsLifetime);
+  }
+  if(ssResult < 0)
+  {
+    ILogR("Error in " + strFuncName, ssResult);
+    freeInnerResources();
+    return ssResult;
+  }
+
+  freeInnerResources();
+
+  if(afSendNotification)
+  {
+    std::auto_ptr<ISocketStream> spStream(
+      ISocketStream::create());
+    if(!spStream.get())
+    {
+      ILog("!!! Cannot create ISocketStream");
+      freeContextBuff(shutDownBufferDesc);
+      return -3;
+    }
+    int nResult = spStream->attach(*pSock);
+    if(nResult)
+    {
+      ILogR("Error in attach to socket", nResult);
+      freeContextBuff(shutDownBufferDesc);
+      return nResult;
+    }
+    nResult = spStream->send(
+      shutDownBuffers[0].pvBuffer,
+      shutDownBuffers[0].cbBuffer);
+    if(nResult)
+    {
+      ILogR("cannot send shutdown message", nResult);
+      freeContextBuff(shutDownBufferDesc);
+      return nResult;
+    }
+  }
+
+  freeContextBuff(shutDownBufferDesc);
+  return 0;
+}
+
+void TSecurityChannel::freeContextBuff(
   SecBufferDesc& aBuffDesc)
 {
   for(unsigned short i=0; i<aBuffDesc.cBuffers; ++i)
@@ -398,7 +476,7 @@ void TSchannelSessionServer::freeContextBuff(
   }
 }
 
-void TSchannelSessionServer::freeInnerResources()
+void TSecurityChannel::freeInnerResources()
 {
   if(m_hCred.dwLower || m_hCred.dwUpper)
   {
@@ -419,4 +497,12 @@ void TSchannelSessionServer::freeInnerResources()
     m_hContext.dwLower = 0;
     m_hContext.dwUpper = 0;
   }
+}
+
+void TSecurityChannel::setMode(
+  bool afServerMode)
+{
+  m_fServerMode = afServerMode;
+  m_ulContextAttribs = afServerMode ? c_dwServerContextAttr : c_dwClientContextAttr;
+  m_dwCredFlags = afServerMode ? c_dwServerCredFlags : c_dwClientCredFlags;
 }

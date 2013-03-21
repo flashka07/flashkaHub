@@ -1,6 +1,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <fstream> // test
 
 #include "aes_test.h"
 #include "sha1_test.h"
@@ -50,10 +51,7 @@ bool launchCommand(const std::string& astrCommand)
 
 void main()
 {
-  unsigned char a = 0x02;
-  unsigned char b = a << -1;
-  std::cout << (unsigned int)a << '\n'
-    << (unsigned int)b << '\n';
+  setlocale(LC_CTYPE, ".1251");
 
   initList();
 

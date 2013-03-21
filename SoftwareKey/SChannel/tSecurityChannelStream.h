@@ -1,9 +1,7 @@
 #pragma once
 #include "iSecurityChannelStream.h"
+#include "tBlob.h"
 
-#include <vector>
-
-typedef unsigned char BYTE;
 class ISocketStream;
 
 class TSecurityChannelStream : public ISecurityChannelStream
@@ -36,8 +34,8 @@ private:
   ISecurityChannel* m_pSecurityChannel;
   ISocketStream* m_pSocketStream;
 
-  std::vector<BYTE> m_vInBuffer;
-  std::vector<BYTE> m_vOutBuffer;
+  TBlob m_vInBuffer;
+  TBlob m_vOutBuffer;
 
   SecBufferDesc m_outBuffDesc;
   SecBuffer m_outSecBuff[4];

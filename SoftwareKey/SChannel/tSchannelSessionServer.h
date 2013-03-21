@@ -4,12 +4,17 @@
 #include <Security.h>
 #include <Schnlsp.h>
 
-#include <vector>
-
 #include "iSchannelSessionServer.h"
+#include "tBlob.h"
 
 const DWORD c_dwAllowedProtocols = SP_PROT_TLS1_2;
-
+const DWORD c_dwServerCredFlags = 
+  SCH_CRED_NO_SYSTEM_MAPPER;
+const DWORD c_dwServerContextAttr = 
+  ASC_REQ_CONFIDENTIALITY |
+  ASC_REQ_REPLAY_DETECT |
+  ASC_REQ_STREAM |
+  ASC_REQ_MUTUAL_AUTH;
 class ISocketStream;
 
 class TSchannelSessionServer : public ISchannelSessionServer
@@ -20,7 +25,8 @@ public:
 
   int authenticate(
     ISocket& aSocket,
-    const ICertificate& aCertificate);
+    const ICertificate& aCertificate,
+    bool afServerMode);
   int renegotiate();
   int shutdown(
     bool afSendNotification);
@@ -28,6 +34,7 @@ public:
   CredHandle& getCreditionals();
   SecHandle& getContext();
 
+  bool isInServerMode() const;
   bool isEstablished() const;
 
   ISocket* getAttachedSocket();
@@ -40,7 +47,7 @@ private:
 
   int authenticateOnStream(
     ISocketStream& aSockStream,
-    std::vector<BYTE>& avExtraData);
+    TBlob& avExtraData);
 
   void freeContextBuff(
     SecBufferDesc& aBuffDesc);
@@ -48,6 +55,8 @@ private:
   void freeInnerResources();
 
   // class data
+  bool m_fServerMode;
+
   CredHandle m_hCred;
   SecHandle  m_hContext;
   unsigned long m_ulContextAttribs;
@@ -58,5 +67,5 @@ private:
   const ICertificate* m_pCertificate;
   ISocket* m_pSocket;
 
-  std::vector<BYTE> m_vExtraData;
+  TBlob m_vExtraData;
 };
