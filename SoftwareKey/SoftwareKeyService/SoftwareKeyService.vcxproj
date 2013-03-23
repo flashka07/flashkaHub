@@ -11,22 +11,22 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{CAF3891D-70C1-467E-BC79-C0EFA111862D}</ProjectGuid>
-    <RootNamespace>SChannel</RootNamespace>
+    <ProjectGuid>{A3205266-A99D-4E2D-8BC9-B97525FC04E8}</ProjectGuid>
+    <RootNamespace>SoftwareKeyService</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v110</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -49,7 +49,6 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;mswsock.lib;secur32.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -66,62 +65,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="dllEntryPoint.cpp" />
-    <ClCompile Include="iCertificate.cpp" />
-    <ClCompile Include="iCertificateUtils.cpp" />
-    <ClCompile Include="iSchannelSessionClient.cpp" />
-    <ClCompile Include="iSchannelUtils.cpp" />
-    <ClCompile Include="iSchannelSessionServer.cpp" />
-    <ClCompile Include="iSecurityChannel.cpp" />
-    <ClCompile Include="iSecurityChannelStream.cpp" />
-    <ClCompile Include="iSocket.cpp" />
-    <ClCompile Include="iSocketStream.cpp" />
-    <ClCompile Include="iSoftwareKeyConnection.cpp" />
-    <ClCompile Include="tCertificate.cpp" />
-    <ClCompile Include="tComputerIdentifier.cpp" />
-    <ClCompile Include="tComputerIdentifierHelper.cpp" />
-    <ClCompile Include="tCryptProv.cpp" />
-    <ClCompile Include="tCS.cpp" />
-    <ClCompile Include="tInstanceIdentifier.cpp" />
-    <ClCompile Include="tSchannelSessionClient.cpp" />
-    <ClCompile Include="tSchannelSessionServer.cpp" />
-    <ClCompile Include="tSecurityChannel.cpp" />
-    <ClCompile Include="tSecurityChannelStream.cpp" />
-    <ClCompile Include="tSocket.cpp" />
-    <ClCompile Include="tSocketStream.cpp" />
-    <ClCompile Include="tSoftwareKeyConnection.cpp" />
-    <ClCompile Include="tSoftwareKeyTask.cpp" />
+    <ClCompile Include="softwareKeyService.cpp" />
+    <ClCompile Include="tKeyClient.cpp" />
+    <ClCompile Include="tSoftwareKey.cpp" />
+    <ClCompile Include="tSoftwareKeyService.cpp" />
+    <ClCompile Include="tStartsReferee.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="iByteStream.h" />
-    <ClInclude Include="iCertificate.h" />
-    <ClInclude Include="iCertificateUtils.h" />
-    <ClInclude Include="iLog.h" />
-    <ClInclude Include="iSchannelSessionClient.h" />
-    <ClInclude Include="iSchannelUtils.h" />
-    <ClInclude Include="iSecurityChannel.h" />
-    <ClInclude Include="iSchannelSessionServer.h" />
-    <ClInclude Include="iSecurityChannelStream.h" />
-    <ClInclude Include="iSocket.h" />
-    <ClInclude Include="iSocketStream.h" />
-    <ClInclude Include="iSoftwareKeyConnection.h" />
-    <ClInclude Include="iSoftwareKeyPingRP.h" />
-    <ClInclude Include="tBlob.h" />
-    <ClInclude Include="tCertificate.h" />
-    <ClInclude Include="tComputerIdentifier.h" />
-    <ClInclude Include="tComputerIdentifierHelper.h" />
-    <ClInclude Include="tCryptProv.h" />
-    <ClInclude Include="tCS.h" />
-    <ClInclude Include="tInstanceIdentifier.h" />
-    <ClInclude Include="tSchannelSessionClient.h" />
-    <ClInclude Include="tSchannelSessionServer.h" />
-    <ClInclude Include="tSecurityChannel.h" />
-    <ClInclude Include="tSecurityChannelStream.h" />
-    <ClInclude Include="tSocket.h" />
-    <ClInclude Include="tSocketStream.h" />
-    <ClInclude Include="tSoftwareKeyConnection.h" />
-    <ClInclude Include="tSoftwareKeyIds.h" />
-    <ClInclude Include="tSoftwareKeyTask.h" />
+    <ClInclude Include="tKeyClient.h" />
+    <ClInclude Include="tSoftwareKey.h" />
+    <ClInclude Include="tSoftwareKeyService.h" />
+    <ClInclude Include="tStartsReferee.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\Debug\SChannel.lib">
+      <FileType>Document</FileType>
+    </Library>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

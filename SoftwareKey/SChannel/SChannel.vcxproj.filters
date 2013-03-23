@@ -69,6 +69,27 @@
     <ClCompile Include="iSecurityChannel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tComputerIdentifier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tComputerIdentifierHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tInstanceIdentifier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="iSoftwareKeyConnection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tSoftwareKeyConnection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tCS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tSoftwareKeyTask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="iSocket.h">
@@ -129,6 +150,33 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tSecurityChannel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tComputerIdentifier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tComputerIdentifierHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tInstanceIdentifier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="iSoftwareKeyConnection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tSoftwareKeyConnection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="iSoftwareKeyPingRP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tCS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tSoftwareKeyIds.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tSoftwareKeyTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

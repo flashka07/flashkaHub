@@ -17,7 +17,8 @@ public:
   int receive(
     void* apBuffer,
     size_t aszBufferSize,
-    size_t& aszReceivedBytes);
+    size_t& aszReceivedBytes,
+    unsigned int aunTimeout);
 
   bool isAttached() const;
 
@@ -29,7 +30,9 @@ private:
   int receiveBytes(
     void* apBuf, 
     size_t aszBuf, 
-    size_t& aszRead);
+    size_t& aszRead,
+    unsigned int aunTimeout);
 
+  // class data
   ISocket* m_pSocket;
 };

@@ -1,5 +1,5 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test", "Test\Test.vcxproj", "{F04E5B8C-E2BE-4817-B639-D16CDACD4687}"
 EndProject
@@ -12,6 +12,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SChannel", "SChannel\SChannel.vcxproj", "{CAF3891D-70C1-467E-BC79-C0EFA111862D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MakeCert", "MakeCert\MakeCert.vcxproj", "{101B4892-2CAA-4754-8D2B-3CFD953EC5EF}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SoftwareKeyService", "SoftwareKeyService\SoftwareKeyService.vcxproj", "{A3205266-A99D-4E2D-8BC9-B97525FC04E8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ApplicationExpamle", "ApplicationExpamle\ApplicationExpamle.vcxproj", "{CF60B6F4-2F5B-416A-9B84-9FCC1FE1F786}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +43,14 @@ Global
 		{101B4892-2CAA-4754-8D2B-3CFD953EC5EF}.Debug|Win32.Build.0 = Debug|Win32
 		{101B4892-2CAA-4754-8D2B-3CFD953EC5EF}.Release|Win32.ActiveCfg = Release|Win32
 		{101B4892-2CAA-4754-8D2B-3CFD953EC5EF}.Release|Win32.Build.0 = Release|Win32
+		{A3205266-A99D-4E2D-8BC9-B97525FC04E8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A3205266-A99D-4E2D-8BC9-B97525FC04E8}.Debug|Win32.Build.0 = Debug|Win32
+		{A3205266-A99D-4E2D-8BC9-B97525FC04E8}.Release|Win32.ActiveCfg = Release|Win32
+		{A3205266-A99D-4E2D-8BC9-B97525FC04E8}.Release|Win32.Build.0 = Release|Win32
+		{CF60B6F4-2F5B-416A-9B84-9FCC1FE1F786}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CF60B6F4-2F5B-416A-9B84-9FCC1FE1F786}.Debug|Win32.Build.0 = Debug|Win32
+		{CF60B6F4-2F5B-416A-9B84-9FCC1FE1F786}.Release|Win32.ActiveCfg = Release|Win32
+		{CF60B6F4-2F5B-416A-9B84-9FCC1FE1F786}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -47,5 +59,6 @@ Global
 		{6D259FA1-3525-4543-98BD-C5437A18FB84} = {74D51AE2-8CDE-4F26-B028-EEAB3FE4F8A0}
 		{A6527555-FBA5-4E36-ADBF-A434E6547270} = {74D51AE2-8CDE-4F26-B028-EEAB3FE4F8A0}
 		{101B4892-2CAA-4754-8D2B-3CFD953EC5EF} = {74D51AE2-8CDE-4F26-B028-EEAB3FE4F8A0}
+		{CF60B6F4-2F5B-416A-9B84-9FCC1FE1F786} = {74D51AE2-8CDE-4F26-B028-EEAB3FE4F8A0}
 	EndGlobalSection
 EndGlobal

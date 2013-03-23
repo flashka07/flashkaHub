@@ -137,6 +137,11 @@ int TCertificate::loadFromPFX(
   std::basic_ifstream<TBlob::value_type> fileCert(
     astrFile, 
     std::ios::binary);
+  if(!fileCert)
+  {
+    ILog("Bad file " + astrFile);
+    return 2;
+  }
   
   fileCert.seekg(0, std::ios::end);   
   blobData.reserve(static_cast<size_t>(fileCert.tellg()));
@@ -228,8 +233,8 @@ void TCertificate::closeCert()
 
   if(m_pcCertContext)
   {
-    TCryptProv cryptProv(*this);
-    cryptProv.setDeleteKeySet(true);
+    /*TCryptProv cryptProv(*this);
+    cryptProv.setDeleteKeySet(true);*/
     ::CertFreeCertificateContext(m_pcCertContext);
   }
 

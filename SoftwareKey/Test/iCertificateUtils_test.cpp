@@ -6,6 +6,9 @@
 #include "../SChannel/iCertificate.h"
 #include "../SChannel/iCertificateUtils.h"
 
+#include "../SChannel/tComputerIdentifier.h"
+#include "../SChannel/tInstanceIdentifier.h"
+
 #include "../SChannel/iSchannelUtils.h"
 #include "../SChannel/iLog.h"
 
@@ -55,13 +58,95 @@ namespace certificateUtils
     ILog("Verified data:");
     ISchannelUtils::printHexDump(vData.size(), &vData[0]);
 
-    test_id();
+    test_computerId();
+    test_instanceId();
   }
 
-  void test_id()
+  void test_computerId()
   {
-    ILog("\nIdentification test");
-    ISchannelUtils::printError(
-      ISchannelUtils::printDevices2());
+    ILog("\nComputer identification test");
+
+    TComputerIdentifier compId;
+    int nResult = ISchannelUtils::generateComputerID(compId);
+    if(nResult)
+    {
+      ILogR("Error in generateComputerID", nResult);
+      ISchannelUtils::printError(nResult);
+      return;
+    }
+
+    TBlob serialized;
+    nResult = ISchannelUtils::serializeComputerId(
+      compId,
+      serialized);
+    if(nResult)
+    {
+      ILogR("Error in serializeComputerId", nResult);
+      ISchannelUtils::printError(nResult);
+      return;
+    }
+
+    ILog("Serialized data:");
+    ISchannelUtils::printHexDump(serialized.size(), &serialized.front());
+
+    TComputerIdentifier restoredCompId;
+    nResult = ISchannelUtils::restoreComputerId(
+      serialized,
+      restoredCompId);
+    if(nResult)
+    {
+      ILogR("Error in restoreComputerId", nResult);
+      ISchannelUtils::printError(nResult);
+      return;
+    }
+    
+    if(compId.isEqual(restoredCompId))
+      ILog("Restored successfully")
+    else
+      ILog("Failed to restore")
+  }
+
+  void test_instanceId()
+  {
+    ILog("\nInstance identification test");
+
+    TInstanceIdentifier instId;
+    int nResult = ISchannelUtils::generateInstanceID(instId);
+    if(nResult)
+    {
+      ILogR("Error in generateComputerID", nResult);
+      ISchannelUtils::printError(nResult);
+      return;
+    }
+
+    TBlob serialized;
+    nResult = ISchannelUtils::serializeInstanceId(
+      instId,
+      serialized);
+    if(nResult)
+    {
+      ILogR("Error in serializeComputerId", nResult);
+      ISchannelUtils::printError(nResult);
+      return;
+    }
+
+    ILog("Serialized data:");
+    ISchannelUtils::printHexDump(serialized.size(), &serialized.front());
+
+    TInstanceIdentifier restoredInstId;
+    nResult = ISchannelUtils::restoreInstanceId(
+      serialized,
+      restoredInstId);
+    if(nResult)
+    {
+      ILogR("Error in restoreComputerId", nResult);
+      ISchannelUtils::printError(nResult);
+      return;
+    }
+    
+    if(instId.isEqual(restoredInstId))
+      ILog("Restored successfully")
+    else
+      ILog("Failed to restore")
   }
 }

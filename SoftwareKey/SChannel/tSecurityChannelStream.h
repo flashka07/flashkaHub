@@ -22,7 +22,8 @@ public:
   int receive(
     void* apBuffer,
     size_t aszBufferSize,
-    size_t& aszReceivedBytes);
+    size_t& aszReceivedBytes,
+    unsigned int aunTimeout);
 
 private:
   int getStreamSizes(

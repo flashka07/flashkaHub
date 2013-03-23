@@ -6,7 +6,7 @@
 
 class ICertificate;
 
-class TCryptProv
+class __declspec(dllexport) TCryptProv
 {
 public:
   TCryptProv(

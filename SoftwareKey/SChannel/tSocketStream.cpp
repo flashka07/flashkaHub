@@ -63,7 +63,8 @@ int TSocketStream::send(
 int TSocketStream::receive(
   void* apBuffer,
   size_t aszBufferSize,
-  size_t& aszReceivedBytes)
+  size_t& aszReceivedBytes,
+  unsigned int aunTimeout)
 {
   if(!apBuffer)
   {
@@ -74,7 +75,11 @@ int TSocketStream::receive(
   size_t szRead = 0;
   size_t szLength = 0;
 
-  int nResult = receiveBytes(&szLength, sizeof(szLength), szRead);
+  int nResult = receiveBytes(
+    &szLength, 
+    sizeof(szLength), 
+    szRead,
+    aunTimeout);
   if(nResult)
   {
     ILogR("Error while receiving Length", nResult);
@@ -83,7 +88,7 @@ int TSocketStream::receive(
 
   if(sizeof(szLength) != szRead)
   {
-    ILog("Wrong received Length");
+    ILog("Wrong received Length or timed out");
     return -2;
   }
 
@@ -95,7 +100,11 @@ int TSocketStream::receive(
     return -2;
   }
 
-  nResult = receiveBytes(apBuffer, szLength, szRead);
+  nResult = receiveBytes(
+    apBuffer, 
+    szLength, 
+    szRead,
+    aunTimeout);
   if(nResult)
   {
     ILogR("Error while receiving Length", nResult);
@@ -104,7 +113,7 @@ int TSocketStream::receive(
 
   if(szRead != szLength)
   {
-    ILog("Wrong received Message");
+    ILog("Wrong received Message or timed out");
     return -2;
   }
 
@@ -155,7 +164,8 @@ int TSocketStream::sendBytes(
 int TSocketStream::receiveBytes(
   void* apBuf, 
   size_t aszBuf, 
-  size_t& aszRead)
+  size_t& aszRead,
+  unsigned int aunTimeout)
 {
   if(!isAttached())
   {
@@ -168,6 +178,33 @@ int TSocketStream::receiveBytes(
   while(lnRemaining) 
   {
     ILog("- Receiving");
+    if(aunTimeout)
+    {
+      fd_set fdsRead = {0};
+      FD_SET(m_pSocket->getInnerSocket(), &fdsRead);
+      TIMEVAL interval = {0};
+      interval.tv_sec = aunTimeout / 1000; // from ms to s
+      interval.tv_usec = (aunTimeout % 1000) * 1000; // from ms to us (micro)
+
+      int nResult = ::select(
+        0,
+        &fdsRead,
+        NULL,
+        NULL,
+        &interval);
+      if(nResult == SOCKET_ERROR)
+      {
+        nResult = ::WSAGetLastError();
+        ILogR("Cannot shutdown socket", nResult);
+        return nResult;
+      }
+      if(!nResult)
+      {
+        aszRead = aszBuf - lnRemaining;
+        return 0; // timeout
+      }
+    }
+
     int nRead = ::recv(
       m_pSocket->getInnerSocket(), 
       reinterpret_cast<char*>(apBuf), 

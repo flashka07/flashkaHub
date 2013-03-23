@@ -1,3 +1,4 @@
+#include <winsock.h>
 #include "tSocket.h"
 
 ISocket* ISocket::create()
@@ -21,4 +22,9 @@ ISocket* ISocket::createInstance()
 
 ISocket::~ISocket()
 {
+}
+
+int ISocket::maxConnectionQueue()
+{
+  return SOMAXCONN;
 }

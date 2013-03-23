@@ -149,7 +149,8 @@ int TSecurityChannelStream::send(
 int TSecurityChannelStream::receive(
   void* apBuffer,
   size_t aszBufferSize,
-  size_t& aszReceivedBytes)
+  size_t& aszReceivedBytes,
+  unsigned int aunTimeout)
 {
   if(!isAttached())
   {
@@ -173,11 +174,17 @@ int TSecurityChannelStream::receive(
       int nResult = m_pSocketStream->receive(
         &m_vInBuffer[0] + szBufferOffset,
         m_vInBuffer.size() - szBufferOffset,
-        szRead);
+        szRead,
+        aunTimeout);
       if(nResult)
       {
         ILogR("Cannot receive message during handshake loop", nResult);
         return nResult;
+      }
+      if(!szRead)
+      {
+        ILog("Receive time out!");
+        return -31;
       }
       szBufferOffset += szRead;
     }

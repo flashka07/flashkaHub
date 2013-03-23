@@ -3,6 +3,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
+#include "iSchannelUtils.h"
 #include "iLog.h"
 
 TSocket::TSocket()
@@ -63,27 +64,39 @@ int TSocket::connect(
       static_cast<int>(ptr->ai_addrlen));
     if(nResult == SOCKET_ERROR) 
     {
-      disconnect();
+      ::closesocket(m_sock);
       m_sock = INVALID_SOCKET;
       continue;
     }
     break;
   }
+  freeaddrinfo(pResultAddrInfo);
 
   if(!isEstablished())
   {
     int nResult = ::WSAGetLastError();
     ILogR("Socked is not connected", nResult);
-    freeaddrinfo(pResultAddrInfo);
-    return nResult;
+    if(nResult)
+      return nResult;
+    else
+      return -20;
   }
-
-  freeaddrinfo(pResultAddrInfo);
 
   return 0;
 }
 
-int TSocket::listenAndAccept(
+void TSocket::disconnect()
+{
+  if(!isEstablished())
+    return;
+
+  shutdown(enSHUTDOWN_BOTH);
+  ::closesocket(m_sock);
+  m_sock = INVALID_SOCKET;
+}
+
+int TSocket::listen(
+  int anMaxConnections,
   const std::string& astrPort,
   const std::string& astrAddress)
 {
@@ -136,7 +149,7 @@ int TSocket::listenAndAccept(
 
   ::freeaddrinfo(pResultAddrInfo);
 
-  nResult = ::listen(sockListen, 1);
+  nResult = ::listen(sockListen, anMaxConnections);
   if(nResult == SOCKET_ERROR)
   {
     nResult = ::GetLastError();
@@ -144,38 +157,82 @@ int TSocket::listenAndAccept(
     return nResult;
   }
 
+  m_sock = sockListen;
   ILog("> Listening...");
+  return 0;
+}
+
+int TSocket::accept(
+  unsigned int aunTimeout,
+  ISocket& aConnectedSocket)
+{
+  if(aunTimeout)
+  {
+    fd_set fdsRead = {0};
+    FD_SET(m_sock, &fdsRead);
+    TIMEVAL interval = {0};
+    interval.tv_sec = aunTimeout / 1000; // from ms to s
+    interval.tv_usec = (aunTimeout % 1000) * 1000; // from ms to us (micro)
+
+    int nResult = ::select(
+      0,
+      &fdsRead,
+      NULL,
+      NULL,
+      &interval);
+    if(nResult == SOCKET_ERROR)
+    {
+      nResult = ::WSAGetLastError();
+      ILogR("Cannot shutdown socket", nResult);
+      return nResult;
+    }
+    if(!nResult)
+      return 0; // timeout
+  }
 
   SOCKADDR sockAddrIncoming = {0};
   int nSize = sizeof(sockAddrIncoming);
-  SOCKET sockClient = NULL;
-  sockClient = ::accept(
-    sockListen, 
+  SOCKET sockClient = ::accept(
+    m_sock, 
     &sockAddrIncoming,
     &nSize);
   if(sockClient == INVALID_SOCKET)
   {
-    nResult = ::GetLastError();
+    int nResult = ::GetLastError();
     ILogR("cannot accept client socket", nResult);
     return nResult;
   }
 
-  ILog("> Client connected");
-
-  ::closesocket(sockListen);
-
-  m_sock = sockClient;
+  aConnectedSocket.attach(sockClient);
+  ILog("> Connection accepted");
   return 0;
 }
 
-void TSocket::disconnect()
+int TSocket::listenAndAccept(
+  const std::string& astrPort,
+  const std::string& astrAddress)
 {
-  if(!isEstablished())
-    return;
+  int nResult = listen(
+    1,
+    astrPort,
+    astrAddress);
+  if(nResult)
+  {
+    ILogR("error in listen", nResult);
+    return nResult;
+  }
 
-  shutdown(enSHUTDOWN_BOTH);
-  ::closesocket(m_sock);
-  m_sock = INVALID_SOCKET;
+  TSocket incSock;
+  nResult = accept(0, incSock);
+  if(nResult)
+  {
+    ILogR("error in accept", nResult);
+    return nResult;
+  }
+
+  disconnect();
+  swap(incSock);
+  return 0;
 }
 
 void TSocket::shutdown(HowShutdown aHow)
@@ -188,6 +245,7 @@ void TSocket::shutdown(HowShutdown aHow)
   {
     nResult = ::WSAGetLastError();
     ILogR("Cannot shutdown socket", nResult);
+    ISchannelUtils::printError(nResult);
   }
 }
 
@@ -199,4 +257,17 @@ bool TSocket::isEstablished() const
 SOCKET TSocket::getInnerSocket() const
 {
   return m_sock;
+}
+
+void TSocket::attach(const SOCKET& aSock)
+{
+  disconnect();
+  m_sock = aSock;
+}
+
+void TSocket::swap(TSocket& aRhs)
+{
+  SOCKET tmp = m_sock;
+  m_sock = aRhs.getInnerSocket();
+  aRhs.m_sock = tmp;
 }
