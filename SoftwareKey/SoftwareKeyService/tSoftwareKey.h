@@ -31,8 +31,6 @@ public:
   const ICertificate& getCertificate() const;
   HCRYPTKEY getAESKey() const;
 
-  bool canStartApplication();
-
 private:
   int init();
 

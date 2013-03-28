@@ -3,6 +3,7 @@
 
 class ISoftwareKeyConnection;
 class ICertificate;
+class IApcLog;
 
 class TApplicationExample : public ISoftwareKeyPingRP
 {
@@ -21,4 +22,6 @@ private:
   // class data
   ISoftwareKeyConnection* m_pKey;
   ICertificate* m_pCert;
+
+  IApcLog* m_pLog;
 };

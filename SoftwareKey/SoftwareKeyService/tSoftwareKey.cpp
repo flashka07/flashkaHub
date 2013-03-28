@@ -260,7 +260,8 @@ int TSoftwareKey::listenerWork_impl()
       continue;
 
     int nResult = m_pStartsRef->tryStart(
-      *this, *spIncSocket.release());
+      *this, 
+      *spIncSocket.release());
     if(nResult)
     {
       ILogR("Error in spSrvSocket->accept", nResult);

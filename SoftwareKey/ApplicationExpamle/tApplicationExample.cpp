@@ -9,11 +9,14 @@
 #include "../SChannel/iSoftwareKeyConnection.h"
 #include "../SChannel/iCertificate.h"
 
+#include <iApcLog.h>
+#include <tApcLogMacros.h>
 #include "../SChannel/iLog.h"
 
 TApplicationExample::TApplicationExample()
   : m_pKey(ISoftwareKeyConnection::createInstance()),
-    m_pCert(ICertificate::createInstance())
+    m_pCert(ICertificate::createInstance()),
+    m_pLog(IApcLog::getLog("TApplicationExample"))
 {
 }
 
@@ -41,6 +44,7 @@ int TApplicationExample::work()
   while(strInput.compare("exit"))
   {
     std::cin >> strInput;
+    __L_BAD(m_pLog, strInput + " passed");
   }
 
   ILog("> Finishing...");

@@ -18,6 +18,9 @@
     <Library Include="..\Debug\SChannel.lib">
       <Filter>Файлы исходного кода</Filter>
     </Library>
+    <Library Include="..\Debug\ApcLog.lib">
+      <Filter>Файлы исходного кода</Filter>
+    </Library>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="applicationExample.cpp">
