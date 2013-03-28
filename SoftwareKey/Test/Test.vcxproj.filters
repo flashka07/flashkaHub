@@ -45,6 +45,9 @@
     <ClCompile Include="iCertificateUtils_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="apollo_test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aes.h">
@@ -72,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="iCertificateUtils_test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="apollo_test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

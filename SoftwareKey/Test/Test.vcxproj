@@ -64,6 +64,7 @@
   <ItemGroup>
     <ClCompile Include="aes.cpp" />
     <ClCompile Include="aes_test.cpp" />
+    <ClCompile Include="apollo_test.cpp" />
     <ClCompile Include="byteSeq.cpp" />
     <ClCompile Include="byteSeq_test.cpp" />
     <ClCompile Include="iCertificateUtils_test.cpp" />
@@ -76,6 +77,7 @@
   <ItemGroup>
     <ClInclude Include="aes.h" />
     <ClInclude Include="aes_test.h" />
+    <ClInclude Include="apollo_test.h" />
     <ClInclude Include="byteSeq.h" />
     <ClInclude Include="byteSeq_test.h" />
     <ClInclude Include="iCertificateUtils_test.h" />

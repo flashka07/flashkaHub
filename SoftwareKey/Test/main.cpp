@@ -7,6 +7,7 @@
 #include "sha1_test.h"
 #include "byteSeq_test.h"
 #include "iCertificateUtils_test.h"
+#include "apollo_test.h"
 
 typedef void (*TestProc)();
 std::map<std::string, TestProc> g_testProcMap; 
@@ -17,6 +18,7 @@ void initList()
   g_testProcMap["sha1"] = sha1::test_sha1;
   g_testProcMap["byte"] = byteseq::test_byteSeq;
   g_testProcMap["cert"] = certificateUtils::test_iCertificateUtils;
+  g_testProcMap["apollo"] = apollo::test_apollo;
 }
 
 void printList()

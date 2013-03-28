@@ -500,7 +500,7 @@ int ISchannelUtils::encryptAES256(
 {
   // hope that hKey is for AES
   // (may be rename function)
-  /*DWORD dwBlockLen = 0;
+  DWORD dwBlockLen = 0;
   DWORD dwParamLen = sizeof(dwBlockLen);
   BOOL fResult = ::CryptGetKeyParam(
     ahKey,
@@ -508,21 +508,31 @@ int ISchannelUtils::encryptAES256(
     (BYTE*)&dwBlockLen,
     &dwParamLen,
     0);
-   if(!fResult)
+  if(!fResult)
   {
     int nResult = ::GetLastError();
     ILogR("Error in ::CryptGetKeyParam", nResult);
     return nResult;
   }
-  if(dwBlockLen)
+  dwBlockLen /= 8;
+
+  /*ALG_ID alg = 0;
+  dwParamLen = sizeof(alg);
+  fResult = ::CryptGetKeyParam(
+    ahKey,
+    KP_ALGID,
+    (BYTE*)&alg,
+    &dwParamLen,
+    0);
+  if(!fResult)
   {
-    DWORD dwBlockLenByte = dwBlockLen / 8;
-    DWORD dwAppend = aData.size() % dwBlockLenByte;
-    
+    int nResult = ::GetLastError();
+    ILogR("Error in ::CryptGetKeyParam", nResult);
+    return nResult;
   }*/
 
   DWORD dwEncryptedSize = 0;
-  BOOL fResult = ::CryptEncrypt(
+  fResult = ::CryptEncrypt(
     ahKey,
     NULL,
     TRUE,
@@ -537,22 +547,26 @@ int ISchannelUtils::encryptAES256(
     return nResult;
   }
 
-  aEncrypted.resize(dwEncryptedSize);
-  std::copy(aData.begin(), aData.end(), aEncrypted.begin());
+  TBlob tmp;
+  tmp.resize(dwEncryptedSize + dwBlockLen);
+  std::copy(aData.begin(), aData.end(), tmp.begin());
   fResult = ::CryptEncrypt(
     ahKey,
     NULL,
     TRUE,
     0,
-    &aEncrypted.front(),
+    &tmp.front(),
     &dwEncryptedSize,
-    aEncrypted.size());
+    tmp.size());
   if(!fResult)
   {
     int nResult = ::GetLastError();
     ILogR("Error in second ::CryptEncrypt", nResult);
     return nResult;
   }
+  tmp.resize(tmp.size() - dwBlockLen);
+  aEncrypted.swap(tmp);
+
   return 0;
 }
 
@@ -586,19 +600,35 @@ int ISchannelUtils::decryptAES256(
   const TBlob& aEncrypted,
   TBlob& aData)
 {
+  DWORD dwBlockLen = 0;
+  DWORD dwParamLen = sizeof(dwBlockLen);
+  BOOL fResult = ::CryptGetKeyParam(
+    ahKey,
+    KP_BLOCKLEN,
+    (BYTE*)&dwBlockLen,
+    &dwParamLen,
+    0);
+  if(!fResult)
+  {
+    int nResult = ::GetLastError();
+    ILogR("Error in ::CryptGetKeyParam", nResult);
+    return nResult;
+  }
+  dwBlockLen /= 8;
+
   TBlob vResult(aEncrypted);
   DWORD dwOrigSize = vResult.size();
-  BOOL fResult = ::CryptDecrypt(
+  fResult = ::CryptDecrypt(
     ahKey,
     NULL,
-    TRUE,
+    FALSE,
     0,
     &vResult.front(),
     &dwOrigSize);
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in first ::CryptEncrypt", nResult);
+    ILogR("Error in ::CryptDecrypt", nResult);
     return nResult;
   }
 
