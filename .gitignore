@@ -132,6 +132,7 @@ App_Data/*.ldf
 
 # Diagrams
 *Modeling/
+*.cd
 *.dgml
 
 # =========================
