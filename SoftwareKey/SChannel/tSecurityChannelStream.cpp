@@ -9,14 +9,17 @@
 #include "iSocketStream.h"
 #include "iSchannelUtils.h"
 
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
+
+#pragma comment(lib, "Secur32.lib")
 
 TSecurityChannelStream::TSecurityChannelStream()
- :m_pSecurityChannel(NULL),
-  m_pSocketStream(NULL),
-  m_szHeaderLength(0),
-  m_szMessageLength(0),
-  m_szTrailerLength(0)
+  : m_pSecurityChannel(NULL),
+    m_pSocketStream(NULL),
+    m_szHeaderLength(0),
+    m_szMessageLength(0),
+    m_szTrailerLength(0),
+    m_pLog(IApcLog::getLog("TSecurityChannelStream"))
 {
   ::memset(&m_outBuffDesc, 0, sizeof(m_outBuffDesc));
   ::memset(&m_outSecBuff, 0, sizeof(m_outSecBuff));
@@ -37,21 +40,21 @@ int TSecurityChannelStream::attach(ISecurityChannel& aChannel)
 
   if(!aChannel.isEstablished())
   {
-    ILog("Security session is not established!");
+    __L_BAD(m_pLog, "Security session is not established!");
     return -5;
   }
 
   int nResult = getStreamSizes(aChannel);
   if(nResult)
   {
-    ILogR("Error in getStreamSizes", nResult);
+    __L_BADH(m_pLog, "Error in getStreamSizes", nResult);
     return nResult;
   }
 
   nResult = initBuffers();
   if(nResult)
   {
-    ILogR("Error in initBuffers", nResult);
+    __L_BADH(m_pLog, "Error in initBuffers", nResult);
     return nResult;
   }
 
@@ -60,7 +63,7 @@ int TSecurityChannelStream::attach(ISecurityChannel& aChannel)
     *aChannel.getAttachedSocket());
   if(nResult)
   {
-    ILogR("Cannot attach socket", nResult);
+    __L_BADH(m_pLog, "Cannot attach socket", nResult);
     return nResult;
   }
 
@@ -88,13 +91,13 @@ int TSecurityChannelStream::send(
 {
   if(!isAttached())
   {
-    ILog("Stream is not attached");
+    __L_BAD(m_pLog, "Stream is not attached");
     return -4;
   }
 
   if(!m_pSecurityChannel->isEstablished())
   {
-    ILog("Security session is not established!");
+    __L_BAD(m_pLog, "Security session is not established!");
     return -5;
   }
 
@@ -119,23 +122,25 @@ int TSecurityChannelStream::send(
       0);
     if(ssResult != SEC_E_OK)
     {
-      ILogR("Error in ::EncryptMessage", ssResult);
+      __L_BADH(m_pLog, "Error in ::EncryptMessage", ssResult);
       return ssResult;
     }
     
     size_t szCurBuffSize = m_outSecBuff[0].cbBuffer 
       + m_outSecBuff[1].cbBuffer + m_outSecBuff[2].cbBuffer;
-    ILog("\nEncrypted:");
-    ISchannelUtils::printHexDump(
-      szCurBuffSize,
-      m_outSecBuff[0].pvBuffer);
+    __L_ANY(m_pLog, "\nEncrypted:");
+    __L_ANY(
+      m_pLog, 
+      ISchannelUtils::printHexDump(
+        szCurBuffSize,
+        m_outSecBuff[0].pvBuffer));
 
     int nResult = m_pSocketStream->send(
       m_outSecBuff[0].pvBuffer,
       szCurBuffSize);
     if(nResult)
     {
-      ILogR("cannot send encrypted message", nResult);
+      __L_BADH(m_pLog, "cannot send encrypted message", nResult);
       return nResult;
     }
 
@@ -154,13 +159,13 @@ int TSecurityChannelStream::receive(
 {
   if(!isAttached())
   {
-    ILog("Stream is not attached");
+    __L_BAD(m_pLog, "Stream is not attached");
     return -4;
   }
 
   if(!m_pSecurityChannel->isEstablished())
   {
-    ILog("Security session is not established!");
+    __L_BAD(m_pLog, "Security session is not established!");
     return -5;
   }
 
@@ -178,12 +183,12 @@ int TSecurityChannelStream::receive(
         aunTimeout);
       if(nResult)
       {
-        ILogR("Cannot receive message during handshake loop", nResult);
+        __L_BADH(m_pLog, "Cannot receive message during handshake loop", nResult);
         return nResult;
       }
       if(!szRead)
       {
-        ILog("Receive time out!");
+        __L_TRK(m_pLog, "Receive time out!");
         return -31;
       }
       szBufferOffset += szRead;
@@ -215,7 +220,7 @@ int TSecurityChannelStream::receive(
        ssResult != SEC_I_CONTEXT_EXPIRED &&
        ssResult != SEC_E_INCOMPLETE_MESSAGE)
     {
-      ILogR("Error in ::DecryptMessage", ssResult);
+      __L_BADH(m_pLog, "Error in ::DecryptMessage", ssResult);
       return ssResult;
     }
 
@@ -225,11 +230,11 @@ int TSecurityChannelStream::receive(
 
     if(ssResult == SEC_I_CONTEXT_EXPIRED)
     {
-      ILog("> Context expired. Shutting down channel...");
+      __L_TRK(m_pLog, "> Context expired. Shutting down channel...");
       int nResult = m_pSecurityChannel->shutdown(false);
       if(nResult)
       {
-        ILogR("Error shutdown Security Channel", nResult);
+        __L_BADH(m_pLog, "Error shutdown Security Channel", nResult);
         return nResult;
       }
       return 0;
@@ -271,7 +276,7 @@ int TSecurityChannelStream::receive(
       int nResult = m_pSecurityChannel->renegotiate();
       if(nResult)
       {
-        ILogR("Error while renegotiate channel", nResult);
+        __L_BADH(m_pLog, "Error while renegotiate channel", nResult);
         return nResult;
       }
       size_t szAuthExtraSize = m_pSecurityChannel->getExtraDataSize();
@@ -296,7 +301,7 @@ int TSecurityChannelStream::getStreamSizes(
 {
   if(!aChannel.isEstablished())
   {
-    ILog("Security session is not established!");
+    __L_BAD(m_pLog, "Security session is not established!");
     return -5;
   }
 
@@ -307,7 +312,7 @@ int TSecurityChannelStream::getStreamSizes(
     &streamSizes);
   if(ssResult != SEC_E_OK)
   {
-    ILogR("Error in ::QueryContextAttributes", ssResult);
+    __L_BADH(m_pLog, "Error in ::QueryContextAttributes", ssResult);
     return ssResult;
   }
 

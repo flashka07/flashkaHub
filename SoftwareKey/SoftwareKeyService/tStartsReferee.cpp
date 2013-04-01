@@ -5,17 +5,18 @@
 #include "../SChannel/tCryptProv.h"
 #include "../SChannel/iSchannelUtils.h"
 #include "../SChannel/tCS.h"
-#include "../SChannel/iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 
 TCS g_csWantToStart;
 
 TStartsReferee::TStartsReferee()
-  : m_pCryptProv(new TCryptProv(L"StartsRefContainer"))
+  : m_pCryptProv(new TCryptProv(L"StartsRefContainer")),
+    m_pLog(IApcLog::getLog("TStartsReferee"))
 {
   int nResult = init();
   if(nResult)
   {
-    ILogR("error in init", nResult);
+    __L_BADH(m_pLog, "error in init", nResult);
     throw nResult;
   }
 }
@@ -41,7 +42,7 @@ int TStartsReferee::tryStart(
   int nResult = spKeyClient->beginVerification();
   if(nResult)
   {
-    ILogR("Error in beginVerification", nResult);
+    __L_BADH(m_pLog, "Error in beginVerification", nResult);
     return nResult;
   }
 
@@ -63,7 +64,7 @@ int TStartsReferee::isAbleToStart(
   int nResult = hashID(keyClient.getInstId(), vHash);
   if(nResult)
   {
-    ILogR("Error in hashID", nResult);
+    __L_BADH(m_pLog, "Error in hashID", nResult);
     return nResult;
   }
 
@@ -77,24 +78,24 @@ int TStartsReferee::isAbleToStart(
   {
     if(!iUnique->second.isEqual(keyClient.getInstId().getComputerId()))
     {
-      ILog("Unique application on not valid computer");
+      __L_TRK(m_pLog, "Unique application on not valid computer");
       return 0;
     }
     fIsUnique = true;
   }
 
   // check for error (trying connect with not unique PID)
-  if(isAlreadyStarted(vHash))
+  if(isAlreadyStarted(vHash, keyClient) && fIsUnique)
   {
-    ILog("Client with same compid, pid is already connected");
+    __L_TRK(m_pLog, "Client with same compid is already connected");
     return 0;
   }
 
   nResult = keyClient.waitToStart();
   if(nResult)
   {
-    ILog("Unique application on not valid computer");
-    return 0;
+    __L_BADH(m_pLog, "Cannot wait to start", nResult);
+    return nResult;
   }
 
   // all is good, add to started table
@@ -103,8 +104,13 @@ int TStartsReferee::isAbleToStart(
     m_connectedUnique.push_back(vHash);
 
   // delete pointer from queue
-  forgive(keyClient, false);
-  
+  nResult = forgive(keyClient, false);
+  if(nResult)
+  {
+    __L_BADH(m_pLog, "Cannot delete pointer from queue", nResult);
+    return nResult;
+  }
+
   afCanStart = true;
   return 0;
 }
@@ -174,7 +180,7 @@ int TStartsReferee::forgive(
   int nResult = hashID(keyClient.getInstId(), vHash);
   if(nResult)
   {
-    ILogR("Error in hashID", nResult);
+    __L_BADH(m_pLog, "Error in hashID", nResult);
     return nResult;
   }
 
@@ -203,8 +209,11 @@ int TStartsReferee::forgive(
 
 
 bool TStartsReferee::isAlreadyStarted(
-  const THash& aHash) const
+  const THash& aHash,
+  const TKeyClient& keyClient) const
 {
+  // is not a valid function
+  // TODO: normal check for already started apps
   return m_connectedClients.find(aHash) != m_connectedClients.end();
 }
 
@@ -218,7 +227,7 @@ int TStartsReferee::hashID(
     vSerialized);
   if(nResult)
   {
-    ILogR("Error in serializeInstanceId", nResult);
+    __L_BADH(m_pLog, "Error in serializeInstanceId", nResult);
     return nResult;
   }
 
@@ -228,7 +237,7 @@ int TStartsReferee::hashID(
     aHash);
   if(nResult)
   {
-    ILogR("Error in hashSha1", nResult);
+    __L_BADH(m_pLog, "Error in hashSha1", nResult);
     return nResult;
   }
 

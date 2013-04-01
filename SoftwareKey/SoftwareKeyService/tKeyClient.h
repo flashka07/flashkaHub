@@ -7,6 +7,7 @@ class ISocket;
 class TSoftwareKey;
 class ISecurityChannel;
 class ISecurityChannelStream;
+class IApcLog;
 
 class TKeyClient
 {
@@ -52,4 +53,6 @@ private:
   HANDLE m_hCanBeStarted;
   HANDLE m_hNeedToStop;
   boost::thread* m_pSupportThread;
+  
+  IApcLog* m_pLog;
 };

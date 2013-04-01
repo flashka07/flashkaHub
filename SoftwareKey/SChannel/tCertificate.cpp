@@ -7,11 +7,12 @@
 #include "iSchannelUtils.h"
 #include "tCryptProv.h"
 #include "tBlob.h"
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 
 TCertificate::TCertificate()
  : m_pcCertContext(NULL),
-   m_hCertStore(NULL)
+   m_hCertStore(NULL),
+   m_pLog(IApcLog::getLog("TCertificate"))
 {
   ::memset(&m_certContext, 0, sizeof(m_certContext));
 
@@ -20,7 +21,7 @@ TCertificate::TCertificate()
   //if(!m_hCertStore)
   //{
   //  int nResult = ::GetLastError();
-  //  ILogR("Error in ::CertOpenSystemStore", nResult);
+  //  __L_BADH(m_pLog, "Error in ::CertOpenSystemStore", nResult);
   //  throw nResult;
   //}
 
@@ -34,19 +35,30 @@ TCertificate::TCertificate()
   //if(!m_pcCertContext)
   //{
   //  int nResult = ::GetLastError();
-  //  ILogR("Error in ::CertFindCertificateInStore", nResult);
+  //  __L_BADH(m_pLog, "Error in ::CertFindCertificateInStore", nResult);
   //  throw nResult;
   //}
 
   //int nResult = loadFromFile("D:\\server_test.pem");
+  TCHAR Buffer[MAX_PATH];
+  DWORD dwLength = ::GetModuleFileName(NULL, Buffer, MAX_PATH);
+  if(!dwLength)
+  {
+    int nResult = ::GetLastError();
+    __L_BADH(m_pLog, "Error in ::GetModuleFileName", nResult);
+    throw nResult;
+  }
+
+  std::string strPath(ExtractFilePath(Buffer));
+
   int nResult = loadFromPFX(
-    "D:\\server_test.certkey.p12",
+    strPath + "server_test.certkey.p12",
     L"qwerty",
     L"192.168.2.40");
   if(nResult)
   {
-    ILogR("Error in loadFromFile", nResult);
-    ISchannelUtils::printError(nResult);
+    __L_BADH(m_pLog, "Error in loadFromFile", nResult);
+    __L_BAD(m_pLog, ISchannelUtils::printError(nResult));
     throw nResult;
   }
 }
@@ -85,8 +97,8 @@ int TCertificate::loadFromFile(
     std::istream_iterator<std::string::value_type>());
   fileCert.close();
 
-  ILog("Certificate data in file:");
-  ILog(strData);
+  __L_ANY(m_pLog, "Certificate data in file:");
+  __L_ANY(m_pLog, strData);
 
   size_t szCertBlobSize = strData.find("-----BEGIN PRIVATE KEY-----", 0);
   if(szCertBlobSize == std::string::npos)
@@ -118,7 +130,7 @@ int TCertificate::loadFromFile(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CertFindCertificateInStore", nResult);
+    __L_BADH(m_pLog, "Error in ::CertFindCertificateInStore", nResult);
     return nResult;
   }
 
@@ -139,7 +151,7 @@ int TCertificate::loadFromPFX(
     std::ios::binary);
   if(!fileCert)
   {
-    ILog("Bad file " + astrFile);
+    __L_BAD(m_pLog, "Bad file " + astrFile);
     return 2;
   }
   
@@ -152,8 +164,8 @@ int TCertificate::loadFromPFX(
     std::istreambuf_iterator<TBlob::value_type>());
   fileCert.close();
 
-  /*ILog("Loaded pfx:");
-  ISchannelUtils::printHexDump(blobData.size(), &blobData[0]);*/
+  /*__L_ANY(m_pLog, "Loaded pfx:");
+  __L_ANY(m_pLog, ISchannelUtils::printHexDump(blobData.size(), &blobData[0]));*/
 
   CRYPT_DATA_BLOB cryptBlob = {0};
   cryptBlob.cbData = blobData.size();
@@ -179,7 +191,7 @@ int TCertificate::loadFromPFX(
   //if(!fResult)
   //{
   //  int nResult = ::GetLastError();
-  //  ILogR("Error in ::CryptQueryObject", nResult);
+  //  __L_BADH(m_pLog, "Error in ::CryptQueryObject", nResult);
   //  return nResult;
   //}
 
@@ -188,7 +200,7 @@ int TCertificate::loadFromPFX(
   BOOL fResult = ::PFXIsPFXBlob(&cryptBlob);
   if(!fResult)
   {
-    ILog(astrFile + " is not a PFX packet!");
+    __L_BAD(m_pLog, astrFile + " is not a PFX packet!");
     return -10;
   }
 
@@ -202,7 +214,7 @@ int TCertificate::loadFromPFX(
   if(!hCertStore)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::PFXImportCertStore", nResult);
+    __L_BADH(m_pLog, "Error in ::PFXImportCertStore", nResult);
     return nResult;
   }
 
@@ -216,7 +228,7 @@ int TCertificate::loadFromPFX(
   if(!pCertContext)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CertFindCertificateInStore", nResult);
+    __L_BADH(m_pLog, "Error in ::CertFindCertificateInStore", nResult);
     ::CertCloseStore(hCertStore, 0);
     return nResult;
   }

@@ -27,7 +27,7 @@ namespace certificateUtils
 
     TBlob vData(10, 0xf0);
     ILog("Data:");
-    ISchannelUtils::printHexDump(vData.size(), &vData[0]);
+    ILog(ISchannelUtils::printHexDump(vData.size(), &vData[0]));
 
     TBlob vSigned;
     int nResult = ICertificateUtils::signHashMessage(
@@ -37,12 +37,12 @@ namespace certificateUtils
     if(nResult)
     {
       ILogR("Error in signMessage", nResult);
-      ISchannelUtils::printError(nResult);
+      ILog(ISchannelUtils::printError(nResult));
       return;
     }
 
     ILog("Signed:");
-    ISchannelUtils::printHexDump(vSigned.size(), &vSigned[0]);
+    ILog(ISchannelUtils::printHexDump(vSigned.size(), &vSigned[0]));
 
     nResult = ICertificateUtils::verifyHashMessage(
       vSigned, 
@@ -51,12 +51,12 @@ namespace certificateUtils
     if(nResult)
     {
       ILogR("Error in verifyMessage", nResult);
-      ISchannelUtils::printError(nResult);
+      ILog(ISchannelUtils::printError(nResult));
       return;
     }
 
     ILog("Verified data:");
-    ISchannelUtils::printHexDump(vData.size(), &vData[0]);
+    ILog(ISchannelUtils::printHexDump(vData.size(), &vData[0]));
 
     test_computerId();
     test_instanceId();
@@ -71,7 +71,7 @@ namespace certificateUtils
     if(nResult)
     {
       ILogR("Error in generateComputerID", nResult);
-      ISchannelUtils::printError(nResult);
+      ILog(ISchannelUtils::printError(nResult));
       return;
     }
 
@@ -82,12 +82,12 @@ namespace certificateUtils
     if(nResult)
     {
       ILogR("Error in serializeComputerId", nResult);
-      ISchannelUtils::printError(nResult);
+      ILog(ISchannelUtils::printError(nResult));
       return;
     }
 
     ILog("Serialized data:");
-    ISchannelUtils::printHexDump(serialized.size(), &serialized.front());
+    ILog(ISchannelUtils::printHexDump(serialized.size(), &serialized.front()));
 
     TComputerIdentifier restoredCompId;
     nResult = ISchannelUtils::restoreComputerId(
@@ -96,7 +96,7 @@ namespace certificateUtils
     if(nResult)
     {
       ILogR("Error in restoreComputerId", nResult);
-      ISchannelUtils::printError(nResult);
+      ILog(ISchannelUtils::printError(nResult));
       return;
     }
     
@@ -115,7 +115,7 @@ namespace certificateUtils
     if(nResult)
     {
       ILogR("Error in generateComputerID", nResult);
-      ISchannelUtils::printError(nResult);
+      ILog(ISchannelUtils::printError(nResult));
       return;
     }
 
@@ -126,12 +126,12 @@ namespace certificateUtils
     if(nResult)
     {
       ILogR("Error in serializeComputerId", nResult);
-      ISchannelUtils::printError(nResult);
+      ILog(ISchannelUtils::printError(nResult));
       return;
     }
 
     ILog("Serialized data:");
-    ISchannelUtils::printHexDump(serialized.size(), &serialized.front());
+    ILog(ISchannelUtils::printHexDump(serialized.size(), &serialized.front()));
 
     TInstanceIdentifier restoredInstId;
     nResult = ISchannelUtils::restoreInstanceId(
@@ -140,7 +140,7 @@ namespace certificateUtils
     if(nResult)
     {
       ILogR("Error in restoreComputerId", nResult);
-      ISchannelUtils::printError(nResult);
+      ILog(ISchannelUtils::printError(nResult));
       return;
     }
     

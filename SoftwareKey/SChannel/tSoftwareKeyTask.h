@@ -4,6 +4,7 @@
 
 typedef void* HANDLE;
 class TSoftwareKeyConnection;
+class IApcLog;
 
 // class task for using in blocking mode
 class TSoftwareKeyTask
@@ -34,4 +35,6 @@ private:
 
   int m_nCompleteResult;
   HANDLE m_hComplete;
+
+  IApcLog* m_pLog;
 };

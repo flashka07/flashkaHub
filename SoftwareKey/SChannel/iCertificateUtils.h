@@ -3,6 +3,7 @@
 #include "tBlob.h"
 
 class ICertificate;
+class IApcLog;
 
 class __declspec(dllexport) ICertificateUtils
 {
@@ -41,4 +42,7 @@ public:
     const void* apBuffer,
     DWORD adwSize,
     const char* apFileName);
+
+private:
+  static IApcLog* getLog();
 };

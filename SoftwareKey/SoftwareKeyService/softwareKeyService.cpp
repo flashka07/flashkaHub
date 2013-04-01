@@ -11,11 +11,11 @@ const std::string c_strCmdUninstall("uninstall");
 const std::string c_strCmdStart("start");
 const std::string c_strCmdStop("stop");
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
   #include "tSoftwareKey.h"
   const std::string c_strCmdDebug("dbg");
   int dbg_start();
-#endif
+//#endif
 
 
 int main(int argc, TCHAR* argv[])
@@ -42,12 +42,12 @@ int main(int argc, TCHAR* argv[])
     {
       nResult = TSoftwareKeyService::instance().start();
     }
-#ifdef _DEBUG
+//#ifdef _DEBUG
     else if(!c_strCmdDebug.compare(strCommand))
     {
       nResult = dbg_start();
     }
-#endif
+//#endif
 
     if(nResult)
     {
@@ -68,7 +68,7 @@ int main(int argc, TCHAR* argv[])
   return nResult;
 }
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
   int dbg_start()
   {
     // start software key
@@ -94,4 +94,4 @@ int main(int argc, TCHAR* argv[])
     }
     return nResult;
   }
-#endif
+//#endif

@@ -17,6 +17,8 @@ namespace apollo
 
   int cryptoaes_test();
 
+  int cryptosign_test();
+
   int aesCBF_test();
 
   int encrypt_test(

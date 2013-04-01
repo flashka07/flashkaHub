@@ -8,15 +8,16 @@ class TComputerIdentifier;
 class TInstanceIdentifier;
 class TCryptProv;
 class IByteStream;
+class IApcLog;
 
 class __declspec(dllexport) ISchannelUtils
 {
 public:
-  static void printHexDump(
+  static std::string printHexDump(
     size_t aszLength, 
     const void* apBuffer);
 
-  static void printError(
+  static std::string printError(
     int anErrorCode);
 
   // identify functions
@@ -108,4 +109,7 @@ public:
 
   static std::wstring strToWstr(
     const std::string& astrSource);
+
+private:
+  static IApcLog* getLog();
 };

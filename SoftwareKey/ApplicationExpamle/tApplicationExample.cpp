@@ -9,8 +9,7 @@
 #include "../SChannel/iSoftwareKeyConnection.h"
 #include "../SChannel/iCertificate.h"
 
-#include <iApcLog.h>
-#include <tApcLogMacros.h>
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 #include "../SChannel/iLog.h"
 
 TApplicationExample::TApplicationExample()
@@ -33,7 +32,7 @@ int TApplicationExample::work()
     *this);
   if(nResult)
   {
-    ILogR("Cannot connect to Software Key", nResult);
+    __L_BADH(m_pLog, "Cannot connect to Software Key", nResult);
     return nResult;
   }
 

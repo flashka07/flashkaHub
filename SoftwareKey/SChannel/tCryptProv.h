@@ -5,6 +5,7 @@
 #include <WinCrypt.h>
 
 class ICertificate;
+class IApcLog;
 
 class __declspec(dllexport) TCryptProv
 {
@@ -35,4 +36,6 @@ private:
   std::wstring m_wstrProviderName;
   DWORD m_dwProviderType;
   bool m_fNewKeyset;
+  
+  IApcLog* m_pLog;
 };

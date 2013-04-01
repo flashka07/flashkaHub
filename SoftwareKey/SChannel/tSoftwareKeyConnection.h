@@ -11,6 +11,7 @@ class ISecurityChannel;
 class ISecurityChannelStream;
 class ISoftwareKeyPingRP;
 class TSoftwareKeyTask;
+class IApcLog;
 
 typedef std::list<TSoftwareKeyTask*> TSKTaksQueue;
 
@@ -59,6 +60,8 @@ private:
 
   void beActive();
 
+  int sleepABit();
+
   // class data
   bool m_fIsConnected;
   bool m_fDisconnectedByClient;
@@ -72,9 +75,12 @@ private:
 
   TSKTaksQueue m_TaskQueue;
   TCS m_csQueue;
+  HANDLE m_hGotNewTask;
 
   mutable TCS m_csStarted;
   HANDLE m_hActivity;
   HANDLE m_hNeedToStop;
   boost::thread* m_pPingerThread;
+
+  IApcLog* m_pLog;
 };

@@ -4,10 +4,13 @@
 #include <ws2tcpip.h>
 
 #include "iSocket.h"
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
+
+#pragma comment(lib, "Ws2_32.lib")
 
 TSocketStream::TSocketStream()
- :m_pSocket(NULL)
+  : m_pSocket(NULL),
+    m_pLog(IApcLog::getLog("TSocketStream"))
 {
 }
 
@@ -37,7 +40,7 @@ int TSocketStream::send(
 {
   if(!apMessage)
   {
-    ILog("Sending NULL buffer");
+    __L_TRK(m_pLog, "Sending NULL buffer");
     return 0;
   }
 
@@ -46,14 +49,14 @@ int TSocketStream::send(
     sizeof(aszLength));
   if(nResult)
   {
-    ILogR("Error while sending Length", nResult);
+    __L_BADH(m_pLog, "Error while sending Length", nResult);
     return nResult;
   }
 
   nResult = sendBytes(apMessage, aszLength);
   if(nResult)
   {
-    ILogR("Error while sending Message", nResult);
+    __L_BADH(m_pLog, "Error while sending Message", nResult);
     return nResult;
   }
 
@@ -68,7 +71,7 @@ int TSocketStream::receive(
 {
   if(!apBuffer)
   {
-    ILog("Reading into NULL buffer");
+    __L_BAD(m_pLog, "Reading into NULL buffer");
     return 0;
   }
 
@@ -82,13 +85,13 @@ int TSocketStream::receive(
     aunTimeout);
   if(nResult)
   {
-    ILogR("Error while receiving Length", nResult);
+    __L_BADH(m_pLog, "Error while receiving Length", nResult);
     return nResult;
   }
 
   if(sizeof(szLength) != szRead)
   {
-    ILog("Wrong received Length or timed out");
+    __L_BAD(m_pLog, "Wrong received Length or timed out");
     return -2;
   }
 
@@ -96,7 +99,7 @@ int TSocketStream::receive(
   {
     // TODO: recieve into temp buffer, then copy data on next call
     // (if taken enough buffer, of course)
-    ILog("Too small buffer");
+    __L_BAD(m_pLog, "Too small buffer");
     return -2;
   }
 
@@ -107,13 +110,13 @@ int TSocketStream::receive(
     aunTimeout);
   if(nResult)
   {
-    ILogR("Error while receiving Length", nResult);
+    __L_BADH(m_pLog, "Error while receiving Length", nResult);
     return nResult;
   }
 
   if(szRead != szLength)
   {
-    ILog("Wrong received Message or timed out");
+    __L_BAD(m_pLog, "Wrong received Message or timed out");
     return -2;
   }
 
@@ -133,7 +136,7 @@ int TSocketStream::sendBytes(
 {
   if(!isAttached())
   {
-    ILog("Stream is not attached to socket!");
+    __L_BAD(m_pLog, "Stream is not attached to socket!");
     return -1;
   }
 
@@ -141,7 +144,7 @@ int TSocketStream::sendBytes(
 
   while(lnRemaining) 
   {
-    ILog("+ Sending");
+    __L_TRK(m_pLog, "+ Sending");
     int nSent = ::send(
       m_pSocket->getInnerSocket(), 
       reinterpret_cast<const char*>(apBuf), 
@@ -150,7 +153,7 @@ int TSocketStream::sendBytes(
     if(SOCKET_ERROR == nSent) 
     {
       int nResult = ::WSAGetLastError();
-      ILogR("error in ::send", nResult);
+      __L_BADH(m_pLog, "error in ::send", nResult);
       return nResult;
     }
 
@@ -169,7 +172,7 @@ int TSocketStream::receiveBytes(
 {
   if(!isAttached())
   {
-    ILog("Stream is not attached to socket!");
+    __L_BAD(m_pLog, "Stream is not attached to socket!");
     return -1;
   }
   
@@ -177,7 +180,7 @@ int TSocketStream::receiveBytes(
 
   while(lnRemaining) 
   {
-    ILog("- Receiving");
+    __L_TRK(m_pLog, "- Receiving");
     if(aunTimeout)
     {
       fd_set fdsRead = {0};
@@ -195,7 +198,7 @@ int TSocketStream::receiveBytes(
       if(nResult == SOCKET_ERROR)
       {
         nResult = ::WSAGetLastError();
-        ILogR("Cannot shutdown socket", nResult);
+        __L_BADH(m_pLog, "Cannot shutdown socket", nResult);
         return nResult;
       }
       if(!nResult)
@@ -212,7 +215,7 @@ int TSocketStream::receiveBytes(
       0);
     if(0 == nRead)
     {
-      ILog("Socket connection closed");
+      __L_TRK(m_pLog, "Socket connection closed");
       m_pSocket->disconnect();
       detach();
       break;
@@ -221,7 +224,7 @@ int TSocketStream::receiveBytes(
     if(SOCKET_ERROR == nRead) 
     {
       int nResult = ::WSAGetLastError();
-      ILogR("error in ::recv", nResult);
+      __L_BADH(m_pLog, "error in ::recv", nResult);
       return nResult;
     }
 

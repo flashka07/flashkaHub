@@ -1,4 +1,5 @@
 #include <memory>
+#include <ctime>
 #include "apollo_test.h"
 
 #include "../SChannel/tCryptProv.h"
@@ -6,6 +7,8 @@
 #include "../SChannel/iSocket.h"
 //#include "../SChannel/iSocketStream.h"
 
+#include "../SChannel/iCertificate.h"
+#include "../SChannel/iCertificateUtils.h"
 #include "../SChannel/iSchannelUtils.h"
 #include "../SChannel/iLog.h"
 
@@ -13,6 +16,18 @@
 
 namespace apollo
 {
+  const size_t szBlockSize = 16;
+
+  void generateData(size_t aszLength, TBlob& aBuffer);
+
+  int testBufferCrypt(
+    HCRYPTKEY ahKey,
+    size_t aszBlocksCount);
+
+  int testBufferSign(
+    const ICertificate& aCert,
+    size_t aszMsgSize);
+
   int tcp_encrypt(
     HCRYPTKEY ahKey,
     TEncryptState& state,
@@ -34,16 +49,19 @@ namespace apollo
     /*ILog("Input destination address and port:");
     std::cin >> strAddress >> strPort;*/
 
-    ISchannelUtils::printError(
-      cryptoaes_test());
+    ILog(ISchannelUtils::printError(
+      cryptoaes_test()));
 
-    ISchannelUtils::printError(
-      aesCBF_test());
+    ILog(ISchannelUtils::printError(
+      cryptosign_test()));
 
-    ISchannelUtils::printError(
+    ILog(ISchannelUtils::printError(
+      aesCBF_test()));
+
+    ILog(ISchannelUtils::printError(
       encrypt_test(
         strAddress,
-        strPort));
+        strPort)));
   }
 
 
@@ -73,8 +91,22 @@ namespace apollo
       ILogR("Error in importAES256Key", nResult);
       return nResult;
     }
+    
+    srand(std::time(0));
+    TBlob iters;
+    for(int i=0; i<10; ++i)
+    {
+      generateData(1, iters);
+      nResult = testBufferCrypt(hKey, iters[0]);
+      if(nResult)
+      {
+        ILogR("Error in testBufferCrypt", nResult);
+        break;
+      }
+    }
+    ::CryptDestroyKey(hKey);
 
-    std::string strData("Test string!");
+    /*std::string strData("Test string!");
     ILog("String to encrypt: " + strData);
 
     TBlob toEncrypt(strData.begin(), strData.end());
@@ -111,8 +143,123 @@ namespace apollo
     std::string strDecrypted(
       decrypted.begin(),
       decrypted.end());
-    ILog("Decrypted string: " + strDecrypted);
+    ILog("Decrypted string: " + strDecrypted);*/
 
+    return 0;
+  }
+
+  int cryptosign_test()
+  {
+    ILog("\nCrypto Sign and verify test\n");
+
+    std::auto_ptr<ICertificate> spCert(
+      ICertificate::create());
+    if(!spCert.get())
+    {
+      ILog("Cannot create certificate");
+      return -5;
+    }
+
+    srand(std::time(0));
+    TBlob iters;
+    int nResult = 0;
+    for(int i=0; i<10; ++i)
+    {
+      generateData(1, iters);
+      nResult = testBufferSign(*spCert, iters[0]);
+      if(nResult)
+      {
+        ILogR("Error in testBufferCrypt", nResult);
+        break;
+      }
+    }
+
+    return nResult;
+  }
+
+  void generateData(size_t aszLength, TBlob& aBuffer)
+  {
+    aBuffer.resize(aszLength);
+    for(size_t i=0; i<aszLength; ++i)
+    {
+      aBuffer[i] = rand() % 256;
+    }
+  }
+
+  int testBufferCrypt(
+    HCRYPTKEY ahKey,
+    size_t aszBlocksCount)
+  {
+    std::stringstream strs;
+    strs << "Crypt test: " << aszBlocksCount << " blocks";
+    ILog(strs.str());
+
+    TBlob source;
+    generateData(aszBlocksCount * szBlockSize, source);
+
+    TBlob encrypted;
+    int nResult = ISchannelUtils::encryptAES256(
+      ahKey,
+      source,
+      encrypted);
+    if(nResult)
+    {
+      ILogR("Error in encryptAES256", nResult);
+      return nResult;
+    }
+
+    TBlob decrypted;
+    nResult = ISchannelUtils::decryptAES256(
+      ahKey,
+      encrypted,
+      decrypted);
+    if(nResult)
+    {
+      ILogR("Error in decryptAES256", nResult);
+      return nResult;
+    }
+
+    if(source == decrypted)
+      ILog("\t...Passed")
+    else
+      ILog("\t...Failed")
+
+    return 0;
+  }
+
+  int testBufferSign(
+    const ICertificate& aCert,
+    size_t aszMsgSize)
+  {
+    std::stringstream strs;
+    strs << "Sign test: " << aszMsgSize << " bytes of message";
+    ILog(strs.str());
+
+    TBlob vData;
+    generateData(aszMsgSize, vData);
+
+    TBlob vSigned;
+    int nResult = ICertificateUtils::signHashMessage(
+      vData,
+      aCert,
+      vSigned);
+    if(nResult)
+    {
+      ILogR("Error in signHashMessage", nResult);
+      return nResult;
+    }
+
+    nResult = ICertificateUtils::verifyHashMessage(
+      vSigned, 
+      aCert,
+      vData);
+    if(nResult)
+    {
+      ILogR("Error in verifyHashMessage", nResult);
+      ILog("\t...Failed")
+    }
+
+    ILog("\t...Passed");
     return 0;
   }
 

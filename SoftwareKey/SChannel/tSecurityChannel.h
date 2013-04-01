@@ -26,6 +26,7 @@ const DWORD c_dwClientContextAttr =
   ISC_REQ_MANUAL_CRED_VALIDATION;
 
 class ISocketStream;
+class IApcLog;
 
 class TSecurityChannel : public ISecurityChannel
 {
@@ -84,4 +85,6 @@ private:
   ISocket* m_pSocket;
 
   TBlob m_vExtraData;
+  
+  IApcLog* m_pLog;
 };

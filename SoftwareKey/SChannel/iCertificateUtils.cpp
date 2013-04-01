@@ -11,11 +11,15 @@
 #include "tCryptProv.h"
 #include "iCertificate.h"
 
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 
 #pragma comment(lib, "crypt32.lib")
 
 // TODO: CHECK FOR MEMLEAKS
+IApcLog* ICertificateUtils::getLog()
+{
+  return IApcLog::getLog("ICertificateUtils");
+}
 
 int ICertificateUtils::createSelfSignedCert()
 {
@@ -39,7 +43,7 @@ int ICertificateUtils::createSelfSignedCert()
   if(!hCertStore)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CertOpenStore", nResult);
+    __L_BADH(getLog(), "Error in ::CertOpenStore", nResult);
     return nResult;
   }
   
@@ -58,7 +62,7 @@ int ICertificateUtils::createSelfSignedCert()
     if(!fResult)
     {
       nResult = ::GetLastError();
-      ILogR("Error in first ::CertStrToName", nResult);
+      __L_BADH(getLog(), "Error in first ::CertStrToName", nResult);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
@@ -75,7 +79,7 @@ int ICertificateUtils::createSelfSignedCert()
     if(!fResult)
     {
       nResult = ::GetLastError();
-      ILogR("Error in second ::CertStrToName", nResult);
+      __L_BADH(getLog(), "Error in second ::CertStrToName", nResult);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
@@ -91,12 +95,12 @@ int ICertificateUtils::createSelfSignedCert()
     NULL);
   if(pCertContext)
   {
-    ILog("Certificate found, deleting it...");
+    __L_TRK(getLog(), "Certificate found, deleting it...");
     fResult = ::CertDeleteCertificateFromStore(pCertContext);
     if(!fResult)
     {
       nResult = ::GetLastError();
-      ILogR(
+      __L_BADH(getLog(), 
         "Error in ::CertDeleteCertificateFromStore", 
         nResult);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -116,7 +120,7 @@ int ICertificateUtils::createSelfSignedCert()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CryptGenKey", nResult);
+    __L_BADH(getLog(), "Error in ::CryptGenKey", nResult);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -151,7 +155,7 @@ int ICertificateUtils::createSelfSignedCert()
   if(!pSelfSignContext)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CertCreateSelfSignCertificate", nResult);
+    __L_BADH(getLog(), "Error in ::CertCreateSelfSignCertificate", nResult);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
@@ -166,7 +170,7 @@ int ICertificateUtils::createSelfSignedCert()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CertAddCertificateContextToStore", nResult);
+    __L_BADH(getLog(), "Error in ::CertAddCertificateContextToStore", nResult);
     ::CertFreeCertificateContext(pSelfSignContext);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -190,7 +194,7 @@ int ICertificateUtils::createSelfSignedCert()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CertSetCertificateContextProperty", nResult);
+    __L_BADH(getLog(), "Error in ::CertSetCertificateContextProperty", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -204,7 +208,7 @@ int ICertificateUtils::createSelfSignedCert()
     "test_cert.pfx");
   if(nResult)
   {
-    ILogR("Error in toPFXFile", nResult);
+    __L_BADH(getLog(), "Error in toPFXFile", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -217,7 +221,7 @@ int ICertificateUtils::createSelfSignedCert()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CertCloseStore", nResult);
+    __L_BADH(getLog(), "Error in ::CertCloseStore", nResult);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -247,7 +251,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   if(!hCertStore)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CertOpenStore", nResult);
+    __L_BADH(getLog(), "Error in ::CertOpenStore", nResult);
     return nResult;
   }
   
@@ -266,7 +270,7 @@ int ICertificateUtils::createSelfSignedCertMS()
     if(!fResult)
     {
       nResult = ::GetLastError();
-      ILogR("Error in first ::CertStrToName", nResult);
+      __L_BADH(getLog(), "Error in first ::CertStrToName", nResult);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
@@ -283,7 +287,7 @@ int ICertificateUtils::createSelfSignedCertMS()
     if(!fResult)
     {
       nResult = ::GetLastError();
-      ILogR("Error in second ::CertStrToName", nResult);
+      __L_BADH(getLog(), "Error in second ::CertStrToName", nResult);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
       return nResult;
     }
@@ -300,7 +304,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CryptGenKey", nResult);
+    __L_BADH(getLog(), "Error in ::CryptGenKey", nResult);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
   }
@@ -335,7 +339,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   if(!pSelfSignContext)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CertCreateSelfSignCertificate", nResult);
+    __L_BADH(getLog(), "Error in ::CertCreateSelfSignCertificate", nResult);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
     return nResult;
@@ -351,7 +355,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CertAddCertificateContextToStore", nResult);
+    __L_BADH(getLog(), "Error in ::CertAddCertificateContextToStore", nResult);
     ::CertFreeCertificateContext(pSelfSignContext);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -367,7 +371,7 @@ int ICertificateUtils::createSelfSignedCertMS()
     "test_cert.pfx");
   if(nResult)
   {
-    ILogR("Error in toPFXFile", nResult);
+    __L_BADH(getLog(), "Error in toPFXFile", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -386,7 +390,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in first ::CryptExportKey", nResult);
+    __L_BADH(getLog(), "Error in first ::CryptExportKey", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -404,7 +408,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in second ::CryptExportKey", nResult);
+    __L_BADH(getLog(), "Error in second ::CryptExportKey", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -422,7 +426,7 @@ int ICertificateUtils::createSelfSignedCertMS()
     if(!fResult)
     {
       nResult = ::GetLastError();
-      ILogR("Error in first ::CryptBinaryToStringA", nResult);
+      __L_BADH(getLog(), "Error in first ::CryptBinaryToStringA", nResult);
       ::CertFreeCertificateContext(pCertContext);
       ::CryptDestroyKey(hCryptKey);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -438,7 +442,7 @@ int ICertificateUtils::createSelfSignedCertMS()
     if(!fResult)
     {
       nResult = ::GetLastError();
-      ILogR("Error in second ::CryptBinaryToStringA", nResult);
+      __L_BADH(getLog(), "Error in second ::CryptBinaryToStringA", nResult);
       ::CertFreeCertificateContext(pCertContext);
       ::CryptDestroyKey(hCryptKey);
       ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -459,7 +463,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in first ::CryptBinaryToStringA", nResult);
+    __L_BADH(getLog(), "Error in first ::CryptBinaryToStringA", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -475,7 +479,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in second ::CryptBinaryToStringA", nResult);
+    __L_BADH(getLog(), "Error in second ::CryptBinaryToStringA", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -489,7 +493,7 @@ int ICertificateUtils::createSelfSignedCertMS()
     "test_cert.cer");
   if(nResult)
   {
-    ILogR("Error in toFile", nResult);
+    __L_BADH(getLog(), "Error in toFile", nResult);
     ::CertFreeCertificateContext(pCertContext);
     ::CryptDestroyKey(hCryptKey);
     ::CertCloseStore(hCertStore, CERT_CLOSE_STORE_CHECK_FLAG);
@@ -502,7 +506,7 @@ int ICertificateUtils::createSelfSignedCertMS()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::CertCloseStore", nResult);
+    __L_BADH(getLog(), "Error in ::CertCloseStore", nResult);
     return nResult;
   }
 
@@ -534,7 +538,7 @@ int ICertificateUtils::signMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in first ::CryptSignMessage", nResult);
+    __L_BADH(getLog(), "Error in first ::CryptSignMessage", nResult);
     return nResult;
   }
 
@@ -550,7 +554,7 @@ int ICertificateUtils::signMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in second ::CryptSignMessage", nResult);
+    __L_BADH(getLog(), "Error in second ::CryptSignMessage", nResult);
     return nResult;
   }
 
@@ -580,7 +584,7 @@ int ICertificateUtils::verifyMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in first ::CryptVerifyMessageSignature", nResult);
+    __L_BADH(getLog(), "Error in first ::CryptVerifyMessageSignature", nResult);
     return nResult;
   }
 
@@ -596,7 +600,7 @@ int ICertificateUtils::verifyMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in second ::CryptVerifyMessageSignature", nResult);
+    __L_BADH(getLog(), "Error in second ::CryptVerifyMessageSignature", nResult);
     return nResult;
   }
 
@@ -620,7 +624,7 @@ int ICertificateUtils::signHashMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptCreateHash", nResult);
+    __L_BADH(getLog(), "Error in ::CryptCreateHash", nResult);
     return nResult;
   }
 
@@ -632,7 +636,7 @@ int ICertificateUtils::signHashMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptHashData", nResult);
+    __L_BADH(getLog(), "Error in ::CryptHashData", nResult);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
@@ -648,7 +652,7 @@ int ICertificateUtils::signHashMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in first ::CryptSignHash", nResult);
+    __L_BADH(getLog(), "Error in first ::CryptSignHash", nResult);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
@@ -664,7 +668,7 @@ int ICertificateUtils::signHashMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in second ::CryptSignHash", nResult);
+    __L_BADH(getLog(), "Error in second ::CryptSignHash", nResult);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
@@ -691,7 +695,7 @@ int ICertificateUtils::verifyHashMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptCreateHash", nResult);
+    __L_BADH(getLog(), "Error in ::CryptCreateHash", nResult);
     return nResult;
   }
 
@@ -703,7 +707,7 @@ int ICertificateUtils::verifyHashMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptHashData", nResult);
+    __L_BADH(getLog(), "Error in ::CryptHashData", nResult);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
@@ -718,7 +722,7 @@ int ICertificateUtils::verifyHashMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptImportPublicKeyInfo", nResult);
+    __L_BADH(getLog(), "Error in ::CryptImportPublicKeyInfo", nResult);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
@@ -733,7 +737,7 @@ int ICertificateUtils::verifyHashMessage(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptVerifySignature", nResult);
+    __L_BADH(getLog(), "Error in ::CryptVerifySignature", nResult);
     ::CryptDestroyKey(hPubKey);
     ::CryptDestroyHash(hHash);
     return nResult;
@@ -760,7 +764,7 @@ int ICertificateUtils::toPFXFile(
   if(!fResult || !blobExport.cbData)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in first ::PFXExportCertStoreEx", nResult);
+    __L_BADH(getLog(), "Error in first ::PFXExportCertStoreEx", nResult);
     return nResult;
   }
 
@@ -775,7 +779,7 @@ int ICertificateUtils::toPFXFile(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in second ::PFXExportCertStoreEx", nResult);
+    __L_BADH(getLog(), "Error in second ::PFXExportCertStoreEx", nResult);
     return nResult;
   }
 
@@ -786,7 +790,7 @@ int ICertificateUtils::toPFXFile(
     apFileName);
   if(nResult)
   {
-    ILogR("Error in toFile", nResult);
+    __L_BADH(getLog(), "Error in toFile", nResult);
     return nResult;
   }
 
@@ -802,7 +806,7 @@ int ICertificateUtils::toFile(
   if(!binFile)
   {
     int nResult = binFile.failbit;
-    ILogR("Error creating out filestream", nResult);
+    __L_BADH(getLog(), "Error creating out filestream", nResult);
     return nResult;
   }
 
@@ -812,7 +816,7 @@ int ICertificateUtils::toFile(
   if(!binFile)
   {
     int nResult = binFile.failbit;
-    ILogR("Error writing into out filestream", nResult);
+    __L_BADH(getLog(), "Error writing into out filestream", nResult);
     return nResult;
   }
 

@@ -3,6 +3,7 @@
 #include "tBlob.h"
 
 class ISocketStream;
+class IApcLog;
 
 class TSecurityChannelStream : public ISecurityChannelStream
 {
@@ -47,4 +48,6 @@ private:
   size_t m_szHeaderLength;
   size_t m_szMessageLength;
   size_t m_szTrailerLength;
+  
+  IApcLog* m_pLog;
 };

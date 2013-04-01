@@ -21,17 +21,25 @@
 #include "iByteStream.h"
 #include <strstream>
 
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 
-void ISchannelUtils::printHexDump(
+IApcLog* ISchannelUtils::getLog()
+{
+  return IApcLog::getLog("ISchannelUtils");
+}
+
+std::string ISchannelUtils::printHexDump(
   size_t aszLength, 
   const void* apBuffer)
 {
+  std::stringstream strsResult;
+
   const BYTE* buffer = reinterpret_cast<const BYTE*>(apBuffer);
   DWORD i,count,index;
   CHAR rgbDigits[]="0123456789abcdef";
   CHAR rgbLine[100];
   char cbLine;
+  strsResult << '\n';
 
   for(index = 0; aszLength;
      aszLength -= count, buffer += count, index += count) 
@@ -76,11 +84,12 @@ void ISchannelUtils::printHexDump(
      }
 
      rgbLine[cbLine++] = 0;
-     printf("%s\n", rgbLine);
+     strsResult << rgbLine << '\n';
   }
+  return strsResult.str();
 }
 
-void ISchannelUtils::printError(
+std::string ISchannelUtils::printError(
   int anErrorCode)
 {
   LPTSTR errorText = NULL;
@@ -98,10 +107,12 @@ void ISchannelUtils::printError(
 
   if(errorText)
   {
-    ILog(errorText);
+    std::string strResult(errorText);
     ::LocalFree(errorText);
     errorText = NULL;
+    return strResult;
   }
+  return "";
 }
 
 // serialize template
@@ -135,7 +146,7 @@ int serializeId(
   }
   catch(boost::exception&)
   {
-    ILog("Error while serializing");
+    //__L_EXC(getLog(), "Error while serializing");
     return -10;
   }
 
@@ -169,7 +180,7 @@ int restoreId(
   }
   catch(boost::exception&)
   {
-    ILog("Error while restoring");
+    //__L_EXC(getLog(), "Error while restoring");
     return -11;
   }
 
@@ -193,7 +204,7 @@ int ISchannelUtils::generateComputerID(
     NULL);
   if(FAILED(hRes))
   {
-    ILogR("Error in ::CoInitializeSecurity", hRes);
+    __L_BADH(getLog(), "Error in ::CoInitializeSecurity", hRes);
     return hRes;
   }
 
@@ -206,7 +217,7 @@ int ISchannelUtils::generateComputerID(
     (LPVOID*)&pLoc);
   if(FAILED(hRes))
   {
-    ILogR("Error in ::CoCreateInstance", hRes);
+    __L_BADH(getLog(), "Error in ::CoCreateInstance", hRes);
     return hRes;
   }
 
@@ -222,7 +233,7 @@ int ISchannelUtils::generateComputerID(
     &pSvc);
   if(FAILED(hRes))
   {
-    ILogR("Error in ::CoCreateInstance", hRes);
+    __L_BADH(getLog(), "Error in ::CoCreateInstance", hRes);
     pLoc->Release();
     return hRes;
   }
@@ -238,7 +249,7 @@ int ISchannelUtils::generateComputerID(
     EOAC_NONE);
   if(FAILED(hRes))
   {
-    ILogR("Error in ::CoCreateInstance", hRes);
+    __L_BADH(getLog(), "Error in ::CoCreateInstance", hRes);
     pSvc->Release();
     pLoc->Release();
     return hRes;
@@ -249,7 +260,7 @@ int ISchannelUtils::generateComputerID(
     aId.m_MotherBoard);
   if(nResult)
   {
-    ILogR("error in fillMotherBoardInfo", nResult);
+    __L_BADH(getLog(), "error in fillMotherBoardInfo", nResult);
     pSvc->Release();
     pLoc->Release();
     return nResult;
@@ -260,7 +271,7 @@ int ISchannelUtils::generateComputerID(
     aId.m_vProcessors);
   if(nResult)
   {
-    ILogR("error in fillProcessorInfo", nResult);
+    __L_BADH(getLog(), "error in fillProcessorInfo", nResult);
     pSvc->Release();
     pLoc->Release();
     return nResult;
@@ -271,7 +282,7 @@ int ISchannelUtils::generateComputerID(
     aId.m_vHardDrives);
   if(nResult)
   {
-    ILogR("error in fillHardDiskInfo", nResult);
+    __L_BADH(getLog(), "error in fillHardDiskInfo", nResult);
     pSvc->Release();
     pLoc->Release();
     return nResult;
@@ -308,7 +319,7 @@ int ISchannelUtils::generateInstanceID(
     if(!dwLength)
     {
       int nResult = ::GetLastError();
-      ILogR("Error in ::GetModuleFileName", nResult);
+      __L_BADH(getLog(), "Error in ::GetModuleFileName", nResult);
       return nResult;
     }
     aId.m_strProcessName = Buffer;
@@ -326,7 +337,7 @@ int ISchannelUtils::generateInstanceID(
     if(hFile == INVALID_HANDLE_VALUE)
     {
       int nResult = ::GetLastError();
-      ILogR("Error in ::CreateFile", nResult);
+      __L_BADH(getLog(), "Error in ::CreateFile", nResult);
       return nResult;
     }
 
@@ -341,7 +352,7 @@ int ISchannelUtils::generateInstanceID(
     if(!fResult)
     {
       int nResult = ::GetLastError();
-      ILogR("Error in ::ReadFile", nResult);
+      __L_BADH(getLog(), "Error in ::ReadFile", nResult);
       ::CloseHandle(hFile);
       return nResult;
     }
@@ -350,7 +361,7 @@ int ISchannelUtils::generateInstanceID(
     int nResult = hashSha1(buffer, aId.m_processHashSum);
     if(nResult)
     {
-      ILogR("Error in hashSha1", nResult);
+      __L_BADH(getLog(), "Error in hashSha1", nResult);
       return nResult;
     }
   }
@@ -358,7 +369,7 @@ int ISchannelUtils::generateInstanceID(
   int nResult = generateComputerID(aId.m_compId);
   if(nResult)
   {
-    ILogR("Error in generateComputerID", nResult);
+    __L_BADH(getLog(), "Error in generateComputerID", nResult);
     return nResult;
   }
 
@@ -395,7 +406,7 @@ int ISchannelUtils::hashSha1(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptCreateHash", nResult);
+    __L_BADH(getLog(), "Error in ::CryptCreateHash", nResult);
     return nResult;
   }
 
@@ -407,7 +418,7 @@ int ISchannelUtils::hashSha1(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptHashData", nResult);
+    __L_BADH(getLog(), "Error in ::CryptHashData", nResult);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
@@ -423,7 +434,7 @@ int ISchannelUtils::hashSha1(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in first ::CryptGetHashParam", nResult);
+    __L_BADH(getLog(), "Error in first ::CryptGetHashParam", nResult);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
@@ -439,7 +450,7 @@ int ISchannelUtils::hashSha1(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in second ::CryptGetHashParam", nResult);
+    __L_BADH(getLog(), "Error in second ::CryptGetHashParam", nResult);
     ::CryptDestroyHash(hHash);
     return nResult;
   }
@@ -485,7 +496,7 @@ int ISchannelUtils::importAES256Key(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in first ::CryptImportKey", nResult);
+    __L_BADH(getLog(), "Error in first ::CryptImportKey", nResult);
     return nResult;
   }
 
@@ -511,7 +522,7 @@ int ISchannelUtils::encryptAES256(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptGetKeyParam", nResult);
+    __L_BADH(getLog(), "Error in ::CryptGetKeyParam", nResult);
     return nResult;
   }
   dwBlockLen /= 8;
@@ -527,11 +538,11 @@ int ISchannelUtils::encryptAES256(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptGetKeyParam", nResult);
+    __L_BADH(getLog(), "Error in ::CryptGetKeyParam", nResult);
     return nResult;
   }*/
 
-  DWORD dwEncryptedSize = 0;
+  /*DWORD dwEncryptedSize = 0;
   fResult = ::CryptEncrypt(
     ahKey,
     NULL,
@@ -543,12 +554,13 @@ int ISchannelUtils::encryptAES256(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in first ::CryptEncrypt", nResult);
+    __L_BADH(getLog(), "Error in first ::CryptEncrypt", nResult);
     return nResult;
-  }
+  }*/
 
-  TBlob tmp;
-  tmp.resize(dwEncryptedSize + dwBlockLen);
+  DWORD dwEncryptedSize = 
+    ((aData.size() + dwBlockLen - 1) / dwBlockLen) * dwBlockLen;
+  TBlob tmp(dwEncryptedSize + dwBlockLen);
   std::copy(aData.begin(), aData.end(), tmp.begin());
   fResult = ::CryptEncrypt(
     ahKey,
@@ -561,10 +573,10 @@ int ISchannelUtils::encryptAES256(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in second ::CryptEncrypt", nResult);
+    __L_BADH(getLog(), "Error in second ::CryptEncrypt", nResult);
     return nResult;
   }
-  tmp.resize(tmp.size() - dwBlockLen);
+  //tmp.resize(tmp.size() - dwBlockLen);
   aEncrypted.swap(tmp);
 
   return 0;
@@ -583,7 +595,7 @@ int ISchannelUtils::encryptAES256(
     hKey);
   if(nResult)
   {
-    ILogR("Error in importAES256Key", nResult);
+    __L_BADH(getLog(), "Error in importAES256Key", nResult);
     return nResult;
   }
 
@@ -611,7 +623,7 @@ int ISchannelUtils::decryptAES256(
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptGetKeyParam", nResult);
+    __L_BADH(getLog(), "Error in ::CryptGetKeyParam", nResult);
     return nResult;
   }
   dwBlockLen /= 8;
@@ -621,14 +633,14 @@ int ISchannelUtils::decryptAES256(
   fResult = ::CryptDecrypt(
     ahKey,
     NULL,
-    FALSE,
+    TRUE,
     0,
     &vResult.front(),
     &dwOrigSize);
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CryptDecrypt", nResult);
+    __L_BADH(getLog(), "Error in ::CryptDecrypt", nResult);
     return nResult;
   }
 
@@ -650,7 +662,7 @@ int ISchannelUtils::decryptAES256(
     hKey);
   if(nResult)
   {
-    ILogR("Error in importAES256Key", nResult);
+    __L_BADH(getLog(), "Error in importAES256Key", nResult);
     return nResult;
   }
   nResult = decryptAES256(
@@ -683,7 +695,7 @@ int ISchannelUtils::sendCommand(
     vData.size());
   if(nResult)
   {
-    ILogR("Error while send", nResult);
+    __L_BADH(getLog(), "Error while send", nResult);
     return nResult;
   }
 
@@ -707,12 +719,12 @@ int ISchannelUtils::receiveCommand(
     aunTimeout);
   if(nResult)
   {
-    ILogR("Error while receive", nResult);
+    __L_BADH(getLog(), "Error while receive", nResult);
     return nResult;
   }
   if(!szReceived)
   {
-    ILog("Timeout while receive command");
+    __L_BAD(getLog(), "Timeout while receive command");
     return -31;
   }
 
@@ -734,7 +746,7 @@ int ISchannelUtils::sendData(
     aData.size());
   if(nResult)
   {
-    ILogR("Error while send", nResult);
+    __L_BADH(getLog(), "Error while send", nResult);
     return nResult;
   }
 
@@ -753,12 +765,12 @@ int ISchannelUtils::receiveData(
     szReceived);
   if(nResult)
   {
-    ILogR("Error while receive", nResult);
+    __L_BADH(getLog(), "Error while receive", nResult);
     return nResult;
   }
   if(!szReceived)
   {
-    ILog("Timeout while receive command");
+    __L_BAD(getLog(), "Timeout while receive command");
     return -31;
   }
 

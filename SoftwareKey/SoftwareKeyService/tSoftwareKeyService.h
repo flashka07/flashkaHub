@@ -7,6 +7,8 @@ const std::string c_strServiceFullName("APACS 3000 Software Key");
 
 const unsigned int c_unCheckStopped = 10000;
 
+class IApcLog;
+
 class TSoftwareKeyService
 {
 public:
@@ -52,4 +54,6 @@ private:
   SERVICE_STATUS m_svcStatus; 
   SERVICE_STATUS_HANDLE m_svcStatusHandle; 
   HANDLE m_hSvcStopEvent;
+  
+  IApcLog* m_pLog;
 };

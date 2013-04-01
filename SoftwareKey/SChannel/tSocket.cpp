@@ -4,10 +4,13 @@
 #include <ws2tcpip.h>
 
 #include "iSchannelUtils.h"
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
+
+#pragma comment(lib, "Ws2_32.lib")
 
 TSocket::TSocket()
-  :m_sock(INVALID_SOCKET)
+  : m_sock(INVALID_SOCKET),
+    m_pLog(IApcLog::getLog("TSocket"))
 {
 }
 
@@ -36,7 +39,7 @@ int TSocket::connect(
     &pResultAddrInfo);
   if(nResult) 
   {
-    ILogR("Cannot getaddrinfo", nResult);
+    __L_BADH(m_pLog, "Cannot getaddrinfo", nResult);
     return nResult;
   }
   
@@ -53,7 +56,7 @@ int TSocket::connect(
     if(m_sock == INVALID_SOCKET) 
     {
       nResult = ::GetLastError();
-      ILogR("Cannot create socket", nResult);
+      __L_BADH(m_pLog, "Cannot create socket", nResult);
       freeaddrinfo(pResultAddrInfo);
       return nResult;
     }
@@ -75,7 +78,7 @@ int TSocket::connect(
   if(!isEstablished())
   {
     int nResult = ::WSAGetLastError();
-    ILogR("Socked is not connected", nResult);
+    __L_BADH(m_pLog, "Socked is not connected", nResult);
     if(nResult)
       return nResult;
     else
@@ -119,7 +122,7 @@ int TSocket::listen(
     &pResultAddrInfo);
   if(nResult) 
   {
-    ILogR("Cannot getaddrinfo", nResult);
+    __L_BADH(m_pLog, "Cannot getaddrinfo", nResult);
     return nResult;
   }
 
@@ -130,7 +133,7 @@ int TSocket::listen(
   if(sockListen == INVALID_SOCKET)
   {
     nResult = ::GetLastError();
-    ILogR("cannot create sockListen", nResult);
+    __L_BADH(m_pLog, "cannot create sockListen", nResult);
     ::freeaddrinfo(pResultAddrInfo);
     return nResult;
   }
@@ -142,7 +145,7 @@ int TSocket::listen(
   if(nResult == SOCKET_ERROR)
   {
     nResult = ::GetLastError();
-    ILogR("cannot bind to socket", nResult);
+    __L_BADH(m_pLog, "cannot bind to socket", nResult);
     ::freeaddrinfo(pResultAddrInfo);
     return nResult;
   }
@@ -153,12 +156,12 @@ int TSocket::listen(
   if(nResult == SOCKET_ERROR)
   {
     nResult = ::GetLastError();
-    ILogR("cannot listen socket", nResult);
+    __L_BADH(m_pLog, "cannot listen socket", nResult);
     return nResult;
   }
 
   m_sock = sockListen;
-  ILog("> Listening...");
+  __L_TRK(m_pLog, "> Listening...");
   return 0;
 }
 
@@ -183,7 +186,7 @@ int TSocket::accept(
     if(nResult == SOCKET_ERROR)
     {
       nResult = ::WSAGetLastError();
-      ILogR("Cannot shutdown socket", nResult);
+      __L_BADH(m_pLog, "Cannot shutdown socket", nResult);
       return nResult;
     }
     if(!nResult)
@@ -199,12 +202,12 @@ int TSocket::accept(
   if(sockClient == INVALID_SOCKET)
   {
     int nResult = ::GetLastError();
-    ILogR("cannot accept client socket", nResult);
+    __L_BADH(m_pLog, "cannot accept client socket", nResult);
     return nResult;
   }
 
   aConnectedSocket.attach(sockClient);
-  ILog("> Connection accepted");
+  __L_TRK(m_pLog, "> Connection accepted");
   return 0;
 }
 
@@ -218,7 +221,7 @@ int TSocket::listenAndAccept(
     astrAddress);
   if(nResult)
   {
-    ILogR("error in listen", nResult);
+    __L_BADH(m_pLog, "error in listen", nResult);
     return nResult;
   }
 
@@ -226,7 +229,7 @@ int TSocket::listenAndAccept(
   nResult = accept(0, incSock);
   if(nResult)
   {
-    ILogR("error in accept", nResult);
+    __L_BADH(m_pLog, "error in accept", nResult);
     return nResult;
   }
 
@@ -244,8 +247,8 @@ void TSocket::shutdown(HowShutdown aHow)
   if(nResult)
   {
     nResult = ::WSAGetLastError();
-    ILogR("Cannot shutdown socket", nResult);
-    ISchannelUtils::printError(nResult);
+    __L_BADH(m_pLog, "Cannot shutdown socket", nResult);
+    __L_BAD(m_pLog, ISchannelUtils::printError(nResult));
   }
 }
 

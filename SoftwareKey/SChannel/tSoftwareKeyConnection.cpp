@@ -18,7 +18,7 @@
 #include "tInstanceIdentifier.h"
 
 #include "iSchannelUtils.h"
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 
 TSoftwareKeyConnection::TSoftwareKeyConnection()
   : m_fIsConnected(false),
@@ -28,10 +28,24 @@ TSoftwareKeyConnection::TSoftwareKeyConnection()
     m_pSocket(NULL),
     m_pSecureChannel(NULL),
     m_pSCStream(NULL),
+    m_hGotNewTask(NULL),
     m_hActivity(NULL),
     m_hNeedToStop(NULL),
-    m_pPingerThread(NULL)
+    m_pPingerThread(NULL),
+    m_pLog(IApcLog::getLog("TSoftwareKeyConnection"))
 {
+  m_hGotNewTask = ::CreateEvent( 
+    NULL,
+    FALSE, // is auto-reset
+    FALSE,
+    NULL);
+  if(!m_hGotNewTask)
+  {
+    int nResult = ::GetLastError();
+    __L_BADH(m_pLog, "Error in ::CreateEvent", nResult);
+    throw nResult;
+  }
+
   m_hActivity = ::CreateEvent( 
     NULL,
     FALSE, // is auto-reset
@@ -40,7 +54,7 @@ TSoftwareKeyConnection::TSoftwareKeyConnection()
   if(!m_hActivity)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CreateEvent", nResult);
+    __L_BADH(m_pLog, "Error in ::CreateEvent", nResult);
     throw nResult;
   }
 
@@ -52,7 +66,7 @@ TSoftwareKeyConnection::TSoftwareKeyConnection()
   if(!m_hNeedToStop)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CreateEvent", nResult);
+    __L_BADH(m_pLog, "Error in ::CreateEvent", nResult);
     throw nResult;
   }
 }
@@ -73,6 +87,9 @@ TSoftwareKeyConnection::~TSoftwareKeyConnection()
   if(m_hActivity)
     ::CloseHandle(m_hActivity);
 
+  if(m_hGotNewTask)
+    ::CloseHandle(m_hGotNewTask);
+
   cleanupChannel();
 }
 
@@ -84,7 +101,7 @@ int TSoftwareKeyConnection::connect(
     TCSLockGuard lock(m_csStarted);
     if(m_fIsConnected)
     {
-      ILog("Already connected to SoftwareKey");   
+      __L_BAD(m_pLog, "Already connected to SoftwareKey");   
       return 0;
     }
 
@@ -94,14 +111,14 @@ int TSoftwareKeyConnection::connect(
     int nResult = setupChannel("localhost", "27015");
     if(nResult)
     {
-      ILogR("Cannot setupChannel", nResult);
+      __L_BADH(m_pLog, "Cannot setupChannel", nResult);
       return nResult;
     }
 
     nResult = sendInstanceIdentifier();
     if(nResult)
     {
-      ILogR("Cannot sendInstanceIdentifier", nResult);
+      __L_BADH(m_pLog, "Cannot sendInstanceIdentifier", nResult);
       return nResult;
     }
 
@@ -115,18 +132,18 @@ int TSoftwareKeyConnection::connect(
       c_unTimeoutInMs);
     if(nResult)
     {
-      ILogR("Cannot receive command", nResult);
+      __L_BADH(m_pLog, "Cannot receive command", nResult);
       return nResult;
     }
   
     // if not is "canStart"
     if(c_strCmdCanStart.compare(strIncomingCommand))
     {
-      ILog("Software key not found");
+      __L_BAD(m_pLog, "Software key not found");
       return -31;
     }
 
-    ILog("Software key was found");
+    __L_TRK(m_pLog, "Software key was found");
 
     // connected sucessfully
     m_fIsConnected = true;
@@ -139,7 +156,7 @@ int TSoftwareKeyConnection::connect(
 int TSoftwareKeyConnection::disconnect()
 {
   ::SetEvent(m_hNeedToStop);
-  if(m_pPingerThread->joinable())
+  if(m_pPingerThread && m_pPingerThread->joinable())
     m_pPingerThread->join();
   return 0;
 }
@@ -190,8 +207,8 @@ void TSoftwareKeyConnection::work(TSoftwareKeyConnection* apThis)
   int nResult = apThis->work_impl();
   if(nResult)
   {
-    ILogR("Error in work_impl", nResult);
-    ISchannelUtils::printError(nResult);
+    __L_BADH(apThis->m_pLog, "Error in work_impl", nResult);
+    __L_BAD(apThis->m_pLog, ISchannelUtils::printError(nResult));
   }
 
   {
@@ -215,7 +232,7 @@ int TSoftwareKeyConnection::work_impl()
       0);
     if(dwResult == WAIT_OBJECT_0)
     {
-      ILog("Got request for stop. Stop dispatch...");
+      __L_TRK(m_pLog, "Got request for stop. Stop dispatch...");
       m_fDisconnectedByClient = true;
       // send command to server
       nResult = ISchannelUtils::sendCommand(
@@ -224,7 +241,7 @@ int TSoftwareKeyConnection::work_impl()
         0);
       if(nResult)
       {
-        ILogR("Error while sending echo", nResult);
+        __L_BADH(m_pLog, "Error while sending echo", nResult);
         // will not return error, just finish
       }
       return 0;
@@ -250,22 +267,20 @@ int TSoftwareKeyConnection::work_impl()
       nResult = processTask(*pTask);
       if(nResult)
       {
-        ILogR("Error while processTask", nResult);
+        __L_BADH(m_pLog, "Error while processTask", nResult);
         break;
       }
     }
-    else
+
+    // send echo
+    nResult = ISchannelUtils::sendCommand(
+      *m_pSCStream,
+      c_strCmdEcho,
+      0);
+    if(nResult)
     {
-      // send echo
-      nResult = ISchannelUtils::sendCommand(
-        *m_pSCStream,
-        c_strCmdEcho,
-        0);
-      if(nResult)
-      {
-        ILogR("Error while sending echo", nResult);
-        break;
-      }
+      __L_BADH(m_pLog, "Error while sending echo", nResult);
+      break;
     }
 
     // receive anything
@@ -278,10 +293,19 @@ int TSoftwareKeyConnection::work_impl()
       c_unTimeoutInMs);
     if(nResult)
     {
-      ILogR("Cannot receive command", nResult);
+      __L_BADH(m_pLog, "Cannot receive command", nResult);
       break;
     }
 
+    // don't use all cpu time
+    nResult = sleepABit();
+    if(nResult)
+    {
+      __L_BADH(m_pLog, "Error in sleepABit", nResult);
+      break;
+    }
+
+    // dispatch commands
     if(!c_strCmdEcho.compare(strIncomingCommand))
     {
       // echo
@@ -290,12 +314,12 @@ int TSoftwareKeyConnection::work_impl()
     else if(!c_strCmdShutdown.compare(strIncomingCommand))
     {
       // software key was shutted down
-      ILog("> Software key was shutted down");
+      __L_TRK(m_pLog, "> Software key was shutted down");
       break;
     }
     else
     {
-      ILog("Wrong incoming command");
+      __L_BAD(m_pLog, "Wrong incoming command");
       nResult = -35;
       break;
     }
@@ -316,7 +340,7 @@ int TSoftwareKeyConnection::processTask(
     aTask.getSource().size());
   if(nResult)
   {
-    ILogR("Error while sendCommand", nResult);
+    __L_BADH(m_pLog, "Error while sendCommand", nResult);
     return nResult;
   }
 
@@ -325,7 +349,7 @@ int TSoftwareKeyConnection::processTask(
     aTask.getSource());
   if(nResult)
   {
-    ILogR("Error while sendData", nResult);
+    __L_BADH(m_pLog, "Error while sendData", nResult);
     return nResult;
   }
 
@@ -342,7 +366,7 @@ int TSoftwareKeyConnection::processTask(
       c_unTimeoutInMs);
     if(nResult)
     {
-      ILogR("Cannot receive command", nResult);
+      __L_BADH(m_pLog, "Cannot receive command", nResult);
       break;
     }
 
@@ -350,7 +374,7 @@ int TSoftwareKeyConnection::processTask(
     // tasks
     if(aTask.getCommand().compare(strIncomingCommand))
     {
-      ILog("Wrong incoming command");
+      __L_BAD(m_pLog, "Wrong incoming command");
       nResult = -35;
       break;
     }
@@ -363,7 +387,7 @@ int TSoftwareKeyConnection::processTask(
       c_unTimeoutInMs);
     if(nResult)
     {
-      ILogR("Cannot receive result data", nResult);
+      __L_BADH(m_pLog, "Cannot receive result data", nResult);
     }
 
     break;
@@ -390,18 +414,20 @@ int TSoftwareKeyConnection::pushTask(
 
   m_csQueue.unlock();
 
+  ::SetEvent(m_hGotNewTask);
+
   // now wait till task finished
   int nTaskResult = 0;
   int nResult = spTask->waitForComplete(nTaskResult);
   if(nResult)
   {
-    ILogR("Error while spTask->waitForComplete", nResult);
+    __L_BADH(m_pLog, "Error while spTask->waitForComplete", nResult);
     return nResult;
   }
 
   if(nTaskResult)
   {
-    ILogR("Eror being while task processing", nTaskResult);
+    __L_BADH(m_pLog, "Eror being while task processing", nTaskResult);
   }
   return nTaskResult;
 }
@@ -413,7 +439,7 @@ int TSoftwareKeyConnection::setupChannel(
   m_pSocket = ISocket::create();
   if(!m_pSocket)
   {
-    ILog("Cannot create Socket");
+    __L_EXC(m_pLog, "Cannot create Socket");
     return -5;
   }
 
@@ -422,14 +448,14 @@ int TSoftwareKeyConnection::setupChannel(
     astrPort);
   if(nResult)
   {
-    ILogR("Cannot connect to Softwarekey socket", nResult);
+    __L_BADH(m_pLog, "Cannot connect to Softwarekey socket", nResult);
     return nResult;
   }
 
   m_pSecureChannel = ISecurityChannel::create();
   if(!m_pSecureChannel)
   {
-    ILog("Cannot create Secure Channel");
+    __L_EXC(m_pLog, "Cannot create Secure Channel");
     return -5;
   }
 
@@ -438,21 +464,21 @@ int TSoftwareKeyConnection::setupChannel(
     *m_pCertificate);
   if(nResult)
   {
-    ILogR("Cannot auth Softwarekey socket", nResult);
+    __L_BADH(m_pLog, "Cannot auth Softwarekey socket", nResult);
     return nResult;
   }
 
   m_pSCStream = ISecurityChannelStream::create();
   if(!m_pSCStream)
   {
-    ILog("Cannot create Secure Channel stream");
+    __L_EXC(m_pLog, "Cannot create Secure Channel stream");
     return -5;
   }
 
   nResult = m_pSCStream->attach(*m_pSecureChannel);
   if(nResult)
   {
-    ILogR("Cannot attach to Secure Channel", nResult);
+    __L_BADH(m_pLog, "Cannot attach to Secure Channel", nResult);
     return nResult;
   }
 
@@ -484,7 +510,7 @@ int TSoftwareKeyConnection::sendInstanceIdentifier()
   int nResult = ISchannelUtils::generateInstanceID(instId);
   if(nResult)
   {
-    ILogR("Cannot generateInstanceID", nResult);
+    __L_BADH(m_pLog, "Cannot generateInstanceID", nResult);
     return nResult;
   }
   
@@ -494,7 +520,7 @@ int TSoftwareKeyConnection::sendInstanceIdentifier()
     vSerialized);
   if(nResult)
   {
-    ILogR("Cannot serializeInstanceId", nResult);
+    __L_BADH(m_pLog, "Cannot serializeInstanceId", nResult);
     return nResult;
   }
 
@@ -505,7 +531,7 @@ int TSoftwareKeyConnection::sendInstanceIdentifier()
     vSerialized.size());
   if(nResult)
   {
-    ILogR("Cannot send cmd", nResult);
+    __L_BADH(m_pLog, "Cannot send cmd", nResult);
     return nResult;
   }
 
@@ -514,7 +540,7 @@ int TSoftwareKeyConnection::sendInstanceIdentifier()
     vSerialized);
   if(nResult)
   {
-    ILogR("Cannot send identificator", nResult);
+    __L_BADH(m_pLog, "Cannot send identificator", nResult);
     return nResult;
   }
 
@@ -524,4 +550,25 @@ int TSoftwareKeyConnection::sendInstanceIdentifier()
 void TSoftwareKeyConnection::beActive()
 {
   ::SetEvent(m_hActivity);
+}
+
+int TSoftwareKeyConnection::sleepABit()
+{
+  unsigned int unTimeToWait = c_unTimeoutInMs / 2;
+  unsigned int unSleepAtOnce = unTimeToWait / 5;
+  unsigned int unSleepsCount = 5;
+  while(unSleepsCount--)
+  {
+    DWORD dwResult = ::WaitForSingleObject(
+      m_hGotNewTask,
+      0);
+    if(dwResult == WAIT_OBJECT_0)
+    {
+      ::ResetEvent(m_hGotNewTask);
+      break;
+    }
+    ::Sleep(unSleepAtOnce);
+  }
+
+  return 0;
 }

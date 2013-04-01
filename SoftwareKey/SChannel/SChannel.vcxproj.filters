@@ -33,22 +33,10 @@
     <ClCompile Include="iSchannelUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="iSchannelSessionServer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="tSchannelSessionServer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="iCertificate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tCertificate.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="iSchannelSessionClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="tSchannelSessionClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="iSecurityChannelStream.cpp">
@@ -122,19 +110,7 @@
     <ClInclude Include="iCertificate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="iSchannelSessionServer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tSchannelSessionServer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="tCertificate.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="iSchannelSessionClient.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tSchannelSessionClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tSecurityChannelStream.h">
@@ -182,5 +158,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\Debug\ApcLog.lib">
+      <Filter>Source Files</Filter>
+    </Library>
   </ItemGroup>
 </Project>

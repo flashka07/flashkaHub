@@ -18,7 +18,7 @@
 #include "../SChannel/iSecurityChannelStream.h"
 
 #include "../SChannel/iSchannelUtils.h"
-#include "../SChannel/iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 
 TKeyClient::TKeyClient(
   const TSoftwareKey& aSoftwareKey,
@@ -29,7 +29,8 @@ TKeyClient::TKeyClient(
     m_pSock(&aSocketToBind),
     m_hCanBeStarted(NULL),
     m_hNeedToStop(NULL),
-    m_pSupportThread(NULL)
+    m_pSupportThread(NULL),
+    m_pLog(IApcLog::getLog("TKeyClient"))
 {
   m_hCanBeStarted = ::CreateEvent( 
     NULL,
@@ -39,7 +40,7 @@ TKeyClient::TKeyClient(
   if(!m_hCanBeStarted)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CreateEvent", nResult);
+    __L_BADH(m_pLog, "Error in ::CreateEvent", nResult);
     throw nResult;
   }
 
@@ -51,7 +52,7 @@ TKeyClient::TKeyClient(
   if(!m_hNeedToStop)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CreateEvent", nResult);
+    __L_BADH(m_pLog, "Error in ::CreateEvent", nResult);
     throw nResult;
   }
 }
@@ -131,7 +132,7 @@ int TKeyClient::waitToStart()
   else
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::WaitForSingleObject", nResult);
+    __L_BADH(m_pLog, "Error in ::WaitForSingleObject", nResult);
     return nResult;
   }
 }
@@ -141,8 +142,8 @@ void TKeyClient::clientSupportWork(TKeyClient* apThis)
   int nResult = apThis->clientSupportWork_impl();
   if(nResult)
   {
-    ILogR("Error in clientSupportWork_impl", nResult);
-    ISchannelUtils::printError(nResult);
+    __L_BADH(apThis->m_pLog, "Error in clientSupportWork_impl", nResult);
+    __L_BAD(apThis->m_pLog, ISchannelUtils::printError(nResult));
   }
 
   // delete this
@@ -155,7 +156,7 @@ int TKeyClient::clientSupportWork_impl()
     ISecurityChannel::create());
   if(!spSecurityChannel.get())
   {
-    ILog("Cannot create ISecurityChannel");
+    __L_EXC(m_pLog, "Cannot create ISecurityChannel");
     return -5;
   }
 
@@ -165,17 +166,17 @@ int TKeyClient::clientSupportWork_impl()
     true);
   if(nResult)
   {
-    ILogR("Cannot set SecurityChannel with client", nResult);
+    __L_BADH(m_pLog, "Cannot set SecurityChannel with client", nResult);
     return nResult;
   }
 
-  ILog("> Security channel was set");
+  __L_TRK(m_pLog, "> Security channel was set");
 
   nResult = commandDispatch(
     *spSecurityChannel);
   if(nResult)
   {
-    ILogR("Error in commandDispatch", nResult);
+    __L_BADH(m_pLog, "Error in commandDispatch", nResult);
     return nResult;
   }
 
@@ -189,14 +190,14 @@ int TKeyClient::commandDispatch(
     ISecurityChannelStream::create());
   if(!spSCStream.get())
   {
-    ILog("Cannot create ISecurityChannelStream");
+    __L_EXC(m_pLog, "Cannot create ISecurityChannelStream");
     return -5;
   }
 
   int nResult = spSCStream->attach(aSecureChannel);
   if(nResult)
   {
-    ILogR("Cannot attach ISecurityChannelStream", nResult);
+    __L_BADH(m_pLog, "Cannot attach ISecurityChannelStream", nResult);
     return nResult;
   }
 
@@ -209,12 +210,12 @@ int TKeyClient::commandDispatch(
       0);
     if(dwResult == WAIT_OBJECT_0)
     {
-      ILog("Got request for stop. Stop dispatch...");
+      __L_TRK(m_pLog, "Got request for stop. Stop dispatch...");
       fNeedToStop = true;
     }
 
     // receive command
-    ILog("Waiting for command...");
+    __L_TRK(m_pLog, "Waiting for command...");
 
     std::string strIncomingCmd;
     size_t szSizeOfData = 0;
@@ -225,7 +226,7 @@ int TKeyClient::commandDispatch(
       c_unTimeoutInMs);
     if(nResult)
     {
-      ILogR("Cannot receiveCommand", nResult);
+      __L_BADH(m_pLog, "Cannot receiveCommand", nResult);
       return nResult;
     }
 
@@ -240,14 +241,14 @@ int TKeyClient::commandDispatch(
       break;
     }
 
-    ILog("Got command " + strIncomingCmd);
+    __L_TRK(m_pLog, "Got command " + strIncomingCmd);
     if(!c_strCmdEcho.compare(strIncomingCmd))
     {
       nResult = ISchannelUtils::sendCommand(
         *spSCStream,
         c_strCmdEcho,
         0);
-      ::Sleep(c_unTimeoutInMs / 2);
+      //::Sleep(c_unTimeoutInMs / 2);
     }
     else if(!c_strCmdRcvInstId.compare(strIncomingCmd))
     {
@@ -258,6 +259,7 @@ int TKeyClient::commandDispatch(
     else if(!c_strCmdShutdown.compare(strIncomingCmd))
     {
       // client has disconnected
+      __L_TRK(m_pLog, "Client has Disconnected");
       break;
     }
     else if(!c_strCmdEncrypt.compare(strIncomingCmd))
@@ -276,14 +278,14 @@ int TKeyClient::commandDispatch(
     }
     else
     {
-      ILog("Unknown command " + strIncomingCmd);
+      __L_BAD(m_pLog, "Unknown command " + strIncomingCmd);
       return -35;
     }
 
     // check for errors
     if(nResult)
     {
-      ILogR("Error while handling command " + strIncomingCmd, nResult); 
+      __L_BADH(m_pLog, "Error while handling command " + strIncomingCmd, nResult); 
       return nResult;
     }
   }
@@ -302,7 +304,7 @@ int TKeyClient::onReceiveInstId(
     c_unTimeoutInMs);
   if(nResult)
   {
-    ILogR("Cannot receive InstId", nResult);
+    __L_BADH(m_pLog, "Cannot receive InstId", nResult);
     return nResult;
   }
 
@@ -311,7 +313,7 @@ int TKeyClient::onReceiveInstId(
     m_instId);
   if(nResult)
   {
-    ILogR("Cannot restore InstId", nResult);
+    __L_BADH(m_pLog, "Cannot restore InstId", nResult);
     return nResult;
   }
 
@@ -321,17 +323,17 @@ int TKeyClient::onReceiveInstId(
     fCanStart);
   if(nResult)
   {
-    ILogR("Error in isAbleToStart", nResult);
+    __L_BADH(m_pLog, "Error in isAbleToStart", nResult);
     return nResult;
   }
 
   if(!fCanStart)
   {
-    ILog("Access to start is denied");
+    __L_TRK(m_pLog, "Access to start is denied");
   }
   else
   {
-    ILog("Application can start");
+    __L_TRK(m_pLog, "Application can start");
   }
   nResult = ISchannelUtils::sendCommand(
     aStream,
@@ -339,7 +341,7 @@ int TKeyClient::onReceiveInstId(
     0);
   if(nResult)
   {
-    ILogR("Cannot send command", nResult);
+    __L_BADH(m_pLog, "Cannot send command", nResult);
     return nResult;
   }
 
@@ -358,7 +360,7 @@ int TKeyClient::onCrypt(
     c_unTimeoutInMs);
   if(nResult)
   {
-    ILogR("Cannot receive data", nResult);
+    __L_BADH(m_pLog, "Cannot receive data", nResult);
     return nResult;
   }
 
@@ -379,7 +381,7 @@ int TKeyClient::onCrypt(
   }
   if(nResult)
   {
-    ILogR("Error while crypt operation", nResult);
+    __L_BADH(m_pLog, "Error while crypt operation", nResult);
     return nResult;
   }
 
@@ -389,14 +391,14 @@ int TKeyClient::onCrypt(
     vResult.size());
   if(nResult)
   {
-    ILogR("Cannot send command", nResult);
+    __L_BADH(m_pLog, "Cannot send command", nResult);
     return nResult;
   }
 
   nResult = ISchannelUtils::sendData(aStream, vResult);
   if(nResult)
   {
-    ILogR("Cannot send result", nResult);
+    __L_BADH(m_pLog, "Cannot send result", nResult);
     return nResult;
   }
   return 0;

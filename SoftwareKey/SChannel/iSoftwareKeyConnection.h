@@ -17,6 +17,8 @@ public:
     const ICertificate& aCertToConnect,
     ISoftwareKeyPingRP& aCallBack) = 0;
 
+  virtual int disconnect() = 0;
+
   virtual int encryptData(
     const TBlob& aData,
     TBlob& aEncrypted) = 0;
@@ -25,7 +27,7 @@ public:
     const TBlob& aEncrypted,
     TBlob& aData) = 0;
 
-  bool isConnected(
-    bool afCheckActivity) const;
+  virtual bool isConnected(
+    bool afCheckActivity) const = 0;
 };
 

@@ -1,7 +1,7 @@
 #include <Windows.h>
 #include "tSoftwareKeyTask.h"
 
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 
 TSoftwareKeyTask::TSoftwareKeyTask(
   const std::string& astrCommand,
@@ -11,7 +11,8 @@ TSoftwareKeyTask::TSoftwareKeyTask(
     m_SourceData(aData),
     m_ResultData(aResult),
     m_nCompleteResult(0),
-    m_hComplete(NULL)
+    m_hComplete(NULL),
+    m_pLog(IApcLog::getLog("TSoftwareKeyTask"))
 {
   m_hComplete = ::CreateEvent( 
     NULL,
@@ -21,7 +22,7 @@ TSoftwareKeyTask::TSoftwareKeyTask(
   if(!m_hComplete)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CreateEvent", nResult);
+    __L_BADH(m_pLog, "Error in ::CreateEvent", nResult);
     throw nResult;
   }
 }
@@ -47,7 +48,7 @@ int TSoftwareKeyTask::waitForComplete(
   else
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::WaitForSingleObject", nResult);
+    __L_BADH(m_pLog, "Error in ::WaitForSingleObject", nResult);
     anCompleteResult = 0;
     return nResult;
   }

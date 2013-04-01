@@ -1,6 +1,8 @@
 #pragma once
 #include "iCertificate.h"
 
+class IApcLog;
+
 class TCertificate : public ICertificate
 {
 public:
@@ -27,4 +29,6 @@ private:
   PCCERT_CONTEXT m_pcCertContext;
 
   HCERTSTORE m_hCertStore;
+
+  IApcLog* m_pLog;
 };

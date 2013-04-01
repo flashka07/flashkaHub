@@ -7,7 +7,7 @@
 #include "iCertificate.h"
 
 #include "tBlob.h"
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 
 #pragma comment(lib, "crypt32.lib")
 
@@ -19,12 +19,13 @@ TCryptProv::TCryptProv(
     m_wstrContainerName(awstrContainerName),
     m_wstrProviderName(awstrProviderName),
     m_dwProviderType(adwProviderType),
-    m_fNewKeyset(false)
+    m_fNewKeyset(false),
+    m_pLog(IApcLog::getLog("TCryptProv"))
 {
   int nResult = init();
   if(nResult)
   {
-    ILogR("Error in TCryptProv::init()", nResult);
+    __L_BADH(m_pLog, "Error in TCryptProv::init()", nResult);
     throw nResult;
   }
 }
@@ -40,14 +41,14 @@ TCryptProv::TCryptProv(
   int nResult = getInfoFromCert(aCert);
   if(nResult)
   {
-    ILogR("Error in TCryptProv::getInfoFromCert()", nResult);
+    __L_BADH(m_pLog, "Error in TCryptProv::getInfoFromCert()", nResult);
     throw nResult;
   }
 
   nResult = init();
   if(nResult)
   {
-    ILogR("Error in TCryptProv::init()", nResult);
+    __L_BADH(m_pLog, "Error in TCryptProv::init()", nResult);
     throw nResult;
   }
 
@@ -61,7 +62,7 @@ TCryptProv::TCryptProv(
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in first ::CertGetCertificateContextProperty", nResult);
+    __L_BADH(m_pLog, "Error in first ::CertGetCertificateContextProperty", nResult);
     throw nResult;
   }
 
@@ -80,7 +81,7 @@ TCryptProv::~TCryptProv()
       CRYPT_DELETEKEYSET /*| CRYPT_MACHINE_KEYSET*/);
     if(!fResult)
     {
-      ILogR("Error in ::CryptAcquireContext(CRYPT_DELETEKEYSET)", ::GetLastError());
+      __L_BADH(m_pLog, "Error in ::CryptAcquireContext(CRYPT_DELETEKEYSET)", ::GetLastError());
     }
   }
 
@@ -140,7 +141,7 @@ int TCryptProv::init()
   }
   if(nResult)
   {
-    ILogR("Error in ::CryptAcquireContext", nResult);
+    __L_BADH(m_pLog, "Error in ::CryptAcquireContext", nResult);
     return nResult;
   }
 
@@ -161,7 +162,7 @@ int TCryptProv::getInfoFromCert(const ICertificate& aCert)
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in first ::CertGetCertificateContextProperty", nResult);
+    __L_BADH(m_pLog, "Error in first ::CertGetCertificateContextProperty", nResult);
     return nResult;
   }
 
@@ -174,7 +175,7 @@ int TCryptProv::getInfoFromCert(const ICertificate& aCert)
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in second ::CertGetCertificateContextProperty", nResult);
+    __L_BADH(m_pLog, "Error in second ::CertGetCertificateContextProperty", nResult);
     return nResult;
   }
   CRYPT_KEY_PROV_INFO* pKeyProvInfo = reinterpret_cast<CRYPT_KEY_PROV_INFO*>(

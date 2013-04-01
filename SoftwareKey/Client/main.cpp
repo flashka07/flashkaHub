@@ -32,6 +32,12 @@ private:
 int work()
 {
   std::auto_ptr<ISocket> spSock(ISocket::create());
+  if(!spSock.get())
+  {
+    ILog("Cannot create ISocket");
+    return -39;
+  }
+
   int nResult = spSock->connect("localhost", "27015");
   if(nResult)
   {
@@ -41,11 +47,20 @@ int work()
   ILog("> Connected to server");
 
   std::auto_ptr<ICertificate> spCert(ICertificate::create());
+  if(!spCert.get())
+  {
+    ILog("Cannot create certificate");
+    return -40;
+  }
+  ILog("> Certificate loaded");
 
-  /*std::auto_ptr<ISchannelSessionClient> spSessionClient(
-    ISchannelSessionClient::create());*/
   std::auto_ptr<ISecurityChannel> spSessionClient(
     ISecurityChannel::create());
+  if(!spSessionClient.get())
+  {
+    ILog("Cannot create ISecurityChannel");
+    return -41;
+  }
 
   nResult = spSessionClient->authenticate(*spSock, *spCert);
   if(nResult)
@@ -53,9 +68,15 @@ int work()
     ILogR("Error in authenticate", nResult);
     return nResult;
   }
+  ILog("> Authentication complete");
 
   std::auto_ptr<ISecurityChannelStream> spStream(
     ISecurityChannelStream::create());
+  if(!spStream.get())
+  {
+    ILog("Cannot create ISecurityChannelStream");
+    return -42;
+  }
   nResult = spStream->attach(*spSessionClient);
   if(nResult)
   {
@@ -70,6 +91,7 @@ int work()
     ILogR("Error in send", nResult);
     return nResult;
   }
+  ILog("Sent message: " + strMessage);
 
   char cBuffer[150] = "";
   size_t szRecieved = 0;
@@ -80,8 +102,10 @@ int work()
     return nResult;
   }
 
+  ILog("Received message:");
   ILog(cBuffer);
 
+  ILog("> Shutting down channel");
   nResult = spSessionClient->shutdown(true);
   if(nResult)
   {

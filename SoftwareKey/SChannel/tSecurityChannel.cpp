@@ -3,7 +3,9 @@
 #include "iSocketStream.h"
 #include "iCertificate.h"
 #include "iSchannelUtils.h"
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
+
+#pragma comment(lib, "Secur32.lib")
 
 TSecurityChannel::TSecurityChannel()
   : m_fServerMode(false),
@@ -11,7 +13,8 @@ TSecurityChannel::TSecurityChannel()
     m_dwCredFlags(c_dwClientCredFlags),
     m_fEstablished(false),
     m_pCertificate(NULL),
-    m_pSocket(NULL)
+    m_pSocket(NULL),
+    m_pLog(IApcLog::getLog("TSecurityChannel"))
 {
   ::memset(&m_hCred, 0, sizeof(m_hCred));
   ::memset(&m_hContext, 0, sizeof(m_hContext));
@@ -37,7 +40,7 @@ int TSecurityChannel::authenticate(
   int nResult = acquireCredentials(aCertificate);
   if(nResult)
   {
-    ILogR("Error in acquireCredentials", nResult);
+    __L_BADH(m_pLog, "Error in acquireCredentials", nResult);
     return nResult;
   }
 
@@ -45,13 +48,13 @@ int TSecurityChannel::authenticate(
     ISocketStream::create());
   if(!spStream.get())
   {
-    ILog("!!! Cannot create ISocketStream");
+    __L_EXC(m_pLog, "!!! Cannot create ISocketStream");
     return -3;
   }
   nResult = spStream->attach(*m_pSocket);
   if(nResult)
   {
-    ILogR("Error in attach to socket", nResult);
+    __L_BADH(m_pLog, "Error in attach to socket", nResult);
     return nResult;
   }
   nResult = authenticateOnStream(
@@ -59,12 +62,12 @@ int TSecurityChannel::authenticate(
     m_vExtraData);
   if(nResult)
   {
-    ILogR("Error in authenticateOnStream", nResult);
+    __L_BADH(m_pLog, "Error in authenticateOnStream", nResult);
     return nResult;
   }
 
   m_fEstablished = true;
-  ILog("> Authentication succeed");
+  __L_TRK(m_pLog, "> Authentication succeed");
 
   return 0;
 }
@@ -84,7 +87,7 @@ int TSecurityChannel::shutdown(bool afSendNotification)
   int nResult = shutdown_impl(afSendNotification);
   if(nResult)
   {
-    ILogR("Error in shutdown_impl", nResult);
+    __L_BADH(m_pLog, "Error in shutdown_impl", nResult);
     return nResult;
   }
 
@@ -154,7 +157,7 @@ int TSecurityChannel::acquireCredentials(
       &tsLifetime);
   if(ssResult != SEC_E_OK)
   {
-    ILogR("Error in ::AcquireCredentialsHandle", ssResult);
+    __L_BADH(m_pLog, "Error in ::AcquireCredentialsHandle", ssResult);
     return ssResult;
   }
 
@@ -201,7 +204,7 @@ int TSecurityChannel::authenticateOnStream(
         szRead);
       if(nResult)
       {
-        ILogR("Cannot receive message during handshake loop", nResult);
+        __L_BADH(m_pLog, "Cannot receive message during handshake loop", nResult);
         return nResult;
       }
       szBufferOffset += szRead;
@@ -230,8 +233,10 @@ int TSecurityChannel::authenticateOnStream(
     std::stringstream logStr;
     logStr << "Token buffer recieved " 
       << inSecBuff[0].cbBuffer << " bytes:";
-    ILog(logStr.str());
-    ISchannelUtils::printHexDump(inSecBuff[0].cbBuffer, inSecBuff[0].pvBuffer);
+    __L_ANY(m_pLog, logStr.str());
+    __L_ANY(
+      m_pLog, 
+      ISchannelUtils::printHexDump(inSecBuff[0].cbBuffer, inSecBuff[0].pvBuffer));
 
     // TODO: may be print ulAttribs and stLifetime
     ULONG ulAttribs = 0;
@@ -239,15 +244,15 @@ int TSecurityChannel::authenticateOnStream(
     if(isInServerMode())
     {
       ssResult = ::AcceptSecurityContext(
-      &m_hCred,
-      fFirstCall ? NULL : &m_hContext,
-      &inBuffDesc,
-      m_ulContextAttribs | ASC_REQ_ALLOCATE_MEMORY,
-      0, // not used for Schannel
-      &m_hContext,
-      &outBuffDesc,
-      &ulAttribs,
-      &tsLifetime);
+        &m_hCred,
+        fFirstCall ? NULL : &m_hContext,
+        &inBuffDesc,
+        m_ulContextAttribs | ASC_REQ_ALLOCATE_MEMORY,
+        0, // not used for Schannel
+        &m_hContext,
+        &outBuffDesc,
+        &ulAttribs,
+        &tsLifetime);
     }
     else
     {
@@ -265,16 +270,18 @@ int TSecurityChannel::authenticateOnStream(
         &ulAttribs,
         &tsLifetime);
     }
-    ILogR(strFuncName + " result", ssResult);
+    __L_BADH(m_pLog, strFuncName + " result", ssResult);
     if(outSecBuff[1].BufferType == SECBUFFER_ALERT &&
        outSecBuff[1].cbBuffer && outSecBuff[1].pvBuffer)
     {
       // show alert if exists
       //ILog(reinterpret_cast<char*>(outSecBuff[1].pvBuffer));
-      ILog("\n++ Alert ++");
-      ISchannelUtils::printHexDump(
-        outSecBuff[1].cbBuffer, 
-        outSecBuff[1].pvBuffer);
+      __L_BAD(m_pLog, "\n++ Alert ++");
+      __L_BAD(
+        m_pLog, 
+        ISchannelUtils::printHexDump(
+          outSecBuff[1].cbBuffer, 
+          outSecBuff[1].pvBuffer));
     }
     fFirstCall = false;
     // need more data
@@ -282,7 +289,7 @@ int TSecurityChannel::authenticateOnStream(
       continue;
     if(ssResult < 0)
     {
-      ILogR("Error in " + strFuncName, ssResult);
+      __L_BADH(m_pLog, "Error in " + strFuncName, ssResult);
       ::DeleteSecurityContext(&m_hContext);
       // may be free outBuffDesc? 
       return ssResult;
@@ -294,7 +301,7 @@ int TSecurityChannel::authenticateOnStream(
       ssResult = ::CompleteAuthToken(&m_hContext, &outBuffDesc);
       if(ssResult < 0)
       {
-        ILogR("Error in ::CompleteAuthToken", ssResult);
+        __L_BADH(m_pLog, "Error in ::CompleteAuthToken", ssResult);
         freeContextBuff(outBuffDesc);
         return ssResult;
       }
@@ -303,7 +310,7 @@ int TSecurityChannel::authenticateOnStream(
     // TODO: may be provide a valid certificate
     if(!isInServerMode() && ssResult == SEC_I_INCOMPLETE_CREDENTIALS)
     {
-      ILogR(
+      __L_BADH(m_pLog, 
         "Client must provide a valid certificate. Current is not valid",
         ssResult);
       freeContextBuff(outBuffDesc);
@@ -320,15 +327,17 @@ int TSecurityChannel::authenticateOnStream(
       std::stringstream logStr;
       logStr << "Token generated " 
         << outSecBuff[0].cbBuffer << " bytes:";
-      ILog(logStr.str());
-      ISchannelUtils::printHexDump(outSecBuff[0].cbBuffer, outSecBuff[0].pvBuffer);
+      __L_ANY(m_pLog, logStr.str());
+      __L_ANY(
+        m_pLog, 
+        ISchannelUtils::printHexDump(outSecBuff[0].cbBuffer, outSecBuff[0].pvBuffer));
 
       int nResult = aSockStream.send(
         outSecBuff[0].pvBuffer,
         outSecBuff[0].cbBuffer);
       if(nResult)
       {
-        ILogR("Cannot send message during handshake loop", nResult);
+        __L_BADH(m_pLog, "Cannot send message during handshake loop", nResult);
         freeContextBuff(outBuffDesc);
         return nResult;
       }
@@ -426,7 +435,7 @@ int TSecurityChannel::shutdown_impl(
   }
   if(ssResult < 0)
   {
-    ILogR("Error in " + strFuncName, ssResult);
+    __L_BADH(m_pLog, "Error in " + strFuncName, ssResult);
     freeInnerResources();
     return ssResult;
   }
@@ -439,14 +448,14 @@ int TSecurityChannel::shutdown_impl(
       ISocketStream::create());
     if(!spStream.get())
     {
-      ILog("!!! Cannot create ISocketStream");
+      __L_EXC(m_pLog, "!!! Cannot create ISocketStream");
       freeContextBuff(shutDownBufferDesc);
       return -3;
     }
     int nResult = spStream->attach(*pSock);
     if(nResult)
     {
-      ILogR("Error in attach to socket", nResult);
+      __L_BADH(m_pLog, "Error in attach to socket", nResult);
       freeContextBuff(shutDownBufferDesc);
       return nResult;
     }
@@ -455,7 +464,7 @@ int TSecurityChannel::shutdown_impl(
       shutDownBuffers[0].cbBuffer);
     if(nResult)
     {
-      ILogR("cannot send shutdown message", nResult);
+      __L_BADH(m_pLog, "cannot send shutdown message", nResult);
       freeContextBuff(shutDownBufferDesc);
       return nResult;
     }
@@ -482,7 +491,7 @@ void TSecurityChannel::freeInnerResources()
   {
     SECURITY_STATUS ssResult = ::FreeCredentialsHandle(&m_hCred);
     if(ssResult != SEC_E_OK)
-      ILogR("Error in ::FreeCredentialsHandle", ssResult);
+      __L_BADH(m_pLog, "Error in ::FreeCredentialsHandle", ssResult);
 
     m_hCred.dwLower = 0;
     m_hCred.dwUpper = 0;
@@ -492,7 +501,7 @@ void TSecurityChannel::freeInnerResources()
   {
     SECURITY_STATUS ssResult = ::DeleteSecurityContext(&m_hContext);
     if(ssResult != SEC_E_OK)
-      ILogR("Error in ::DeleteSecurityContext", ssResult);
+      __L_BADH(m_pLog, "Error in ::DeleteSecurityContext", ssResult);
 
     m_hContext.dwLower = 0;
     m_hContext.dwUpper = 0;

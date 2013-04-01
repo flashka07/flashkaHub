@@ -11,7 +11,7 @@
 #include "../SChannel/tCryptProv.h"
 #include "../SChannel/iSchannelUtils.h"
 #include "../SChannel/tCS.h"
-#include "../SChannel/iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 
 TCS g_csfStarted;
 
@@ -32,7 +32,8 @@ TSoftwareKey::TSoftwareKey()
     m_pCryptProv(new TCryptProv(L"aesprov")),
     m_hAesKey(NULL),
     m_pNetListenThread(NULL),
-    m_pStartsRef(new TStartsReferee)
+    m_pStartsRef(new TStartsReferee),
+    m_pLog(IApcLog::getLog("TSoftwareKey"))
 {
   m_hStartEvent = ::CreateEvent( 
     NULL,
@@ -42,7 +43,7 @@ TSoftwareKey::TSoftwareKey()
   if(!m_hStartEvent)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CreateEvent", nResult);
+    __L_BADH(m_pLog, "Error in ::CreateEvent", nResult);
     throw nResult;
   }
 
@@ -54,7 +55,7 @@ TSoftwareKey::TSoftwareKey()
   if(!m_hStopEvent)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CreateEvent", nResult);
+    __L_BADH(m_pLog, "Error in ::CreateEvent", nResult);
     throw nResult;
   }
 }
@@ -107,7 +108,7 @@ int TSoftwareKey::start()
   int nResult = init();
   if(nResult)
   {
-    ILogR("Error in init", nResult);
+    __L_BADH(m_pLog, "Error in init", nResult);
     return nResult;
   }
   // say that we starting
@@ -128,7 +129,7 @@ int TSoftwareKey::stop()
   int nResult = m_pStartsRef->shutdownAll();
   if(nResult)
   {
-    ILogR("Cannot shutdown StartsRef", nResult);
+    __L_BADH(m_pLog, "Cannot shutdown StartsRef", nResult);
   }
 
   m_pNetListenThread->join();
@@ -182,7 +183,7 @@ int TSoftwareKey::init()
     m_hAesKey);
   if(nResult)
   {
-    ILogR("Error in importAES256Key", nResult);
+    __L_BADH(m_pLog, "Error in importAES256Key", nResult);
     return nResult;
   }
   return 0;
@@ -193,8 +194,8 @@ void TSoftwareKey::listenerWork(TSoftwareKey* apThis)
   int nResult = apThis->listenerWork_impl();
   if(nResult)
   {
-    ILogR("Error in listenerWork_impl", nResult);
-    ISchannelUtils::printError(nResult);
+    __L_BADH(apThis->m_pLog, "Error in listenerWork_impl", nResult);
+    __L_BAD(apThis->m_pLog, ISchannelUtils::printError(nResult));
   }
 
   // say that we stop
@@ -216,7 +217,7 @@ int TSoftwareKey::listenerWork_impl()
   else
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::WaitForSingleObject", nResult);
+    __L_BADH(m_pLog, "Error in ::WaitForSingleObject", nResult);
     return nResult;
   }
   
@@ -224,7 +225,7 @@ int TSoftwareKey::listenerWork_impl()
   std::auto_ptr<ISocket> spSrvSocket(ISocket::create());
   if(!spSrvSocket.get())
   {
-    ILog("Cannot create Server Socket");
+    __L_EXC(m_pLog, "Cannot create Server Socket");
     return -5;
   }
 
@@ -234,18 +235,18 @@ int TSoftwareKey::listenerWork_impl()
     c_strListenAddress);
   if(nResult)
   {
-    ILogR("Error in spSrvSocket->listen", nResult);
+    __L_BADH(m_pLog, "Error in spSrvSocket->listen", nResult);
     return nResult;
   }
 
   // accept clients
   while(isRunning())
   {
-    ILog("Trying to accept...");
+    __L_TRK(m_pLog, "Trying to accept...");
     std::auto_ptr<ISocket> spIncSocket(ISocket::create());
     if(!spIncSocket.get())
     {
-      ILog("Cannot create Incoming");
+      __L_EXC(m_pLog, "Cannot create Incoming");
       return -5;
     }
     nResult = spSrvSocket->accept(
@@ -253,7 +254,7 @@ int TSoftwareKey::listenerWork_impl()
       *spIncSocket);
     if(nResult)
     {
-      ILogR("Error in spSrvSocket->accept", nResult);
+      __L_BADH(m_pLog, "Error in spSrvSocket->accept", nResult);
       return nResult;
     }
     if(!spIncSocket->isEstablished())
@@ -264,7 +265,7 @@ int TSoftwareKey::listenerWork_impl()
       *spIncSocket.release());
     if(nResult)
     {
-      ILogR("Error in spSrvSocket->accept", nResult);
+      __L_BADH(m_pLog, "Error in m_pStartsRef->tryStart", nResult);
       return nResult;
     }
   }

@@ -8,7 +8,7 @@
 #include "tSoftwareKey.h"
 
 #include "../SChannel/iSchannelUtils.h"
-#include "../SChannel/iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
 
 #include "../SChannel/iSocket.h"
 #include "../SChannel/iCertificate.h"
@@ -19,7 +19,8 @@ TSoftwareKeyService* TSoftwareKeyService::m_pInstance = NULL;
 
 TSoftwareKeyService::TSoftwareKeyService()
   : m_svcStatusHandle(NULL),
-    m_hSvcStopEvent(NULL)
+    m_hSvcStopEvent(NULL),
+    m_pLog(IApcLog::getLog("TSoftwareKeyService"))
 {
   ::memset(&m_svcStatus, 0 , sizeof(m_svcStatus));
 }
@@ -79,7 +80,7 @@ int TSoftwareKeyService::start()
   if(!hSCManager) 
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::OpenSCManager()", nResult);
+    __L_BADH(m_pLog, "Error in ::OpenSCManager()", nResult);
     return nResult;
   }
 
@@ -90,7 +91,7 @@ int TSoftwareKeyService::start()
   if(!hService) 
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::OpenSCManager()", nResult);
+    __L_BADH(m_pLog, "Error in ::OpenSCManager()", nResult);
     ::CloseServiceHandle(hSCManager);
     return nResult;
   }
@@ -103,11 +104,11 @@ int TSoftwareKeyService::start()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::StartService()", nResult);
+    __L_BADH(m_pLog, "Error in ::StartService()", nResult);
   }
   else
   {
-    ILog("Service started successfully"); 
+    __L_TRK(m_pLog, "Service started successfully"); 
   }
 
   ::CloseServiceHandle(hService);
@@ -124,7 +125,7 @@ int TSoftwareKeyService::stop()
   if(!hSCManager) 
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::OpenSCManager()", nResult);
+    __L_BADH(m_pLog, "Error in ::OpenSCManager()", nResult);
     return nResult;
   }
 
@@ -135,7 +136,7 @@ int TSoftwareKeyService::stop()
   if(!hService) 
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::OpenSCManager()", nResult);
+    __L_BADH(m_pLog, "Error in ::OpenSCManager()", nResult);
     ::CloseServiceHandle(hSCManager);
     return nResult;
   }
@@ -149,11 +150,11 @@ int TSoftwareKeyService::stop()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::ControlService()", nResult);
+    __L_BADH(m_pLog, "Error in ::ControlService()", nResult);
   }
   else
   {
-    ILog("Service stopped successfully"); 
+    __L_TRK(m_pLog, "Service stopped successfully"); 
   }
 
   ::CloseServiceHandle(hService);
@@ -168,7 +169,7 @@ int TSoftwareKeyService::install()
   if(!fResult)
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::GetModuleFileName()", nResult);
+    __L_BADH(m_pLog, "Error in ::GetModuleFileName()", nResult);
     return nResult;
   }
 
@@ -179,7 +180,7 @@ int TSoftwareKeyService::install()
   if(!schSCManager) 
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::OpenSCManager()", nResult);
+    __L_BADH(m_pLog, "Error in ::OpenSCManager()", nResult);
     return nResult;
   }
 
@@ -201,12 +202,12 @@ int TSoftwareKeyService::install()
   if(!schService) 
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::CreateService()", nResult);
+    __L_BADH(m_pLog, "Error in ::CreateService()", nResult);
     ::CloseServiceHandle(schSCManager);
     return nResult;
   }
 
-  ILog("Service installed successfully"); 
+  __L_TRK(m_pLog, "Service installed successfully"); 
 
   ::CloseServiceHandle(schService); 
   ::CloseServiceHandle(schSCManager);
@@ -222,7 +223,7 @@ int TSoftwareKeyService::uninstall()
   if(!hSCManager) 
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::OpenSCManager()", nResult);
+    __L_BADH(m_pLog, "Error in ::OpenSCManager()", nResult);
     return nResult;
   }
 
@@ -233,7 +234,7 @@ int TSoftwareKeyService::uninstall()
   if(!hService) 
   {
     int nResult = ::GetLastError();
-    ILogR("Error in ::OpenSCManager()", nResult);
+    __L_BADH(m_pLog, "Error in ::OpenSCManager()", nResult);
     ::CloseServiceHandle(hSCManager);
     return nResult;
   }
@@ -243,11 +244,11 @@ int TSoftwareKeyService::uninstall()
   if(!fResult)
   {
     nResult = ::GetLastError();
-    ILogR("Error in ::DeleteService()", nResult);
+    __L_BADH(m_pLog, "Error in ::DeleteService()", nResult);
   }
   else
   {
-    ILog("Service uninstalled successfully"); 
+    __L_TRK(m_pLog, "Service uninstalled successfully"); 
   }
 
   ::CloseServiceHandle(hService);
@@ -274,7 +275,7 @@ void TSoftwareKeyService::main(DWORD dwArgc, LPTSTR *lpszArgv)
   {
     int nResult = ::GetLastError();
     svc.logSvcError("Error in ::RegisterServiceCtrlHandler()", nResult);
-    ISchannelUtils::printError(nResult);
+    __L_BAD(svc.m_pLog, ISchannelUtils::printError(nResult));
     return;
   }
 

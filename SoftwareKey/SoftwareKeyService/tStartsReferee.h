@@ -15,6 +15,7 @@ class TCryptProv;
 class TInstanceIdentifier;
 class TSoftwareKey;
 class ISocket;
+class IApcLog;
 
 // allow or disallow application starts
 // store connected
@@ -34,7 +35,8 @@ public:
     bool& afCanStart);
 
   bool isAlreadyStarted(
-    const THash& aHash) const;
+    const THash& aHash,
+    const TKeyClient& keyClient) const;
 
   int shutdownAll();
 
@@ -56,4 +58,6 @@ private:
   TKeyClientMap m_connectedClients;
   TArrayOfHash m_connectedUnique;
   TCompIdMap m_uniqueProcIds;
+  
+  IApcLog* m_pLog;
 };

@@ -1,7 +1,12 @@
 #include "tComputerIdentifier.h"
 #include "tComputerIdentifierHelper.h"
 
-#include "iLog.h"
+#include "../../../../projects/ApcLog/ApcLog/Interfaces/tApcLogMacros.h"
+
+IApcLog* getLogCI()
+{
+  return IApcLog::getLog("TComputerIdentifierHelper");
+}
 
 int getWMIProp(
   IWbemServices& aSvc,
@@ -19,7 +24,7 @@ int getWMIProp(
     &pEnumerator);
   if(FAILED(hRes))
   {
-    ILogR("Error in aSvc.ExecQuery", hRes);
+    __L_BADH(getLogCI(), "Error in aSvc.ExecQuery", hRes);
     return hRes;
   }
 
@@ -35,7 +40,7 @@ int getWMIProp(
       &uReturn);
     if(FAILED(hRes))
     {
-      ILogR("Error in pEnumerator->Next", hRes);
+      __L_BADH(getLogCI(), "Error in pEnumerator->Next", hRes);
       return hRes;
     }
     if(!uReturn)
@@ -81,7 +86,7 @@ int fillMotherBoardInfo(
     vValues);
   if(nResult)
   {
-    ILogR("Error in getWMIProp", nResult);
+    __L_BADH(getLogCI(), "Error in getWMIProp", nResult);
     return nResult;
   }
 
@@ -108,7 +113,7 @@ int fillProcessorInfo(
     aProcessors);
   if(nResult)
   {
-    ILogR("Error in getWMIProp", nResult);
+    __L_BADH(getLogCI(), "Error in getWMIProp", nResult);
     return nResult;
   }
 
@@ -134,7 +139,7 @@ int fillHardDiskInfo(
     aHardDisks);
   if(nResult)
   {
-    ILogR("Error in getWMIProp", nResult);
+    __L_BADH(getLogCI(), "Error in getWMIProp", nResult);
     return nResult;
   }
 

@@ -7,6 +7,7 @@ typedef ULONG_PTR HCRYPTKEY;
 class ICertificate;
 class TCryptProv;
 class TStartsReferee;
+class IApcLog;
 
 const std::string c_strListenAddress("localhost");
 const std::string c_strListenPort("27015");
@@ -51,4 +52,6 @@ private:
   boost::thread* m_pNetListenThread;
 
   TStartsReferee* m_pStartsRef;
+  
+  IApcLog* m_pLog;
 };

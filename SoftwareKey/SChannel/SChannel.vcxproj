@@ -1,6 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug XP|Win32">
+      <Configuration>Debug XP</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
@@ -21,8 +25,14 @@
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug XP|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110_xp</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
@@ -34,6 +44,9 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug XP|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -42,7 +55,30 @@
     <IncludePath>C:\Program Files %28x86%29\Boost\boost_1_53_0;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files %28x86%29\Boost\boost_1_53_0\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug XP|Win32'">
+    <IncludePath>C:\Program Files %28x86%29\Boost\boost_1_53_0;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files %28x86%29\Boost\boost_1_53_0\libs;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>C:\Program Files %28x86%29\Boost\boost_1_53_0;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files %28x86%29\Boost\boost_1_53_0\libs;$(LibraryPath)</LibraryPath>
+    <TargetExt>.dll</TargetExt>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>ws2_32.lib;mswsock.lib;secur32.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug XP|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
@@ -73,9 +109,7 @@
     <ClCompile Include="dllEntryPoint.cpp" />
     <ClCompile Include="iCertificate.cpp" />
     <ClCompile Include="iCertificateUtils.cpp" />
-    <ClCompile Include="iSchannelSessionClient.cpp" />
     <ClCompile Include="iSchannelUtils.cpp" />
-    <ClCompile Include="iSchannelSessionServer.cpp" />
     <ClCompile Include="iSecurityChannel.cpp" />
     <ClCompile Include="iSecurityChannelStream.cpp" />
     <ClCompile Include="iSocket.cpp" />
@@ -87,8 +121,6 @@
     <ClCompile Include="tCryptProv.cpp" />
     <ClCompile Include="tCS.cpp" />
     <ClCompile Include="tInstanceIdentifier.cpp" />
-    <ClCompile Include="tSchannelSessionClient.cpp" />
-    <ClCompile Include="tSchannelSessionServer.cpp" />
     <ClCompile Include="tSecurityChannel.cpp" />
     <ClCompile Include="tSecurityChannelStream.cpp" />
     <ClCompile Include="tSocket.cpp" />
@@ -101,10 +133,8 @@
     <ClInclude Include="iCertificate.h" />
     <ClInclude Include="iCertificateUtils.h" />
     <ClInclude Include="iLog.h" />
-    <ClInclude Include="iSchannelSessionClient.h" />
     <ClInclude Include="iSchannelUtils.h" />
     <ClInclude Include="iSecurityChannel.h" />
-    <ClInclude Include="iSchannelSessionServer.h" />
     <ClInclude Include="iSecurityChannelStream.h" />
     <ClInclude Include="iSocket.h" />
     <ClInclude Include="iSocketStream.h" />
@@ -117,8 +147,6 @@
     <ClInclude Include="tCryptProv.h" />
     <ClInclude Include="tCS.h" />
     <ClInclude Include="tInstanceIdentifier.h" />
-    <ClInclude Include="tSchannelSessionClient.h" />
-    <ClInclude Include="tSchannelSessionServer.h" />
     <ClInclude Include="tSecurityChannel.h" />
     <ClInclude Include="tSecurityChannelStream.h" />
     <ClInclude Include="tSocket.h" />
@@ -129,6 +157,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\Debug\ApcLog.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

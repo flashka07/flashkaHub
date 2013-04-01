@@ -1,6 +1,8 @@
 #pragma once
 #include "iSocketStream.h"
 
+class IApcLog;
+
 class TSocketStream : public ISocketStream
 {
 public:
@@ -35,4 +37,6 @@ private:
 
   // class data
   ISocket* m_pSocket;
+
+  IApcLog* m_pLog;
 };
